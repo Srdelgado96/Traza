@@ -18,3 +18,15 @@
         right: 0.75rem;
         top: 0.5rem;
     }
+
+.traza-app-name {
+    font-size: 1rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.dropdown-item-text {
+    max-width: 18rem;
+    padding: 0.75rem 1rem;
+    white-space: normal;
+}

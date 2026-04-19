@@ -1,7 +1,243 @@
-﻿@page "/"
+@page "/"
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Dashboard | Traza</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="page-header">
+    <div>
+        <h4 class="page-title">Dashboard</h4>
+        <ul class="breadcrumbs">
+            <li class="nav-home">
+                <a href="/">
+                    <i class="icon-home"></i>
+                </a>
+            </li>
+            <li class="separator">
+                <i class="icon-arrow-right"></i>
+            </li>
+            <li class="nav-item">
+                <a href="/">Traza</a>
+            </li>
+            <li class="separator">
+                <i class="icon-arrow-right"></i>
+            </li>
+            <li class="nav-item">
+                <a href="/">Resumen</a>
+            </li>
+        </ul>
+    </div>
+</div>
 
-Welcome to your new app.
+<div class="row">
+    <div class="col-sm-6 col-md-3">
+        <div class="card card-stats card-round">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-icon">
+                        <div class="icon-big text-center icon-danger bubble-shadow-small">
+                            <i class="fas fa-triangle-exclamation"></i>
+                        </div>
+                    </div>
+                    <div class="col col-stats ms-3 ms-sm-0">
+                        <div class="numbers">
+                            <p class="card-category">Incidencias abiertas</p>
+                            <h4 class="card-title">24</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-md-3">
+        <div class="card card-stats card-round">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-icon">
+                        <div class="icon-big text-center icon-warning bubble-shadow-small">
+                            <i class="fas fa-hourglass-half"></i>
+                        </div>
+                    </div>
+                    <div class="col col-stats ms-3 ms-sm-0">
+                        <div class="numbers">
+                            <p class="card-category">Pendientes de clasificar</p>
+                            <h4 class="card-title">7</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-md-3">
+        <div class="card card-stats card-round">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-icon">
+                        <div class="icon-big text-center icon-success bubble-shadow-small">
+                            <i class="fas fa-list-check"></i>
+                        </div>
+                    </div>
+                    <div class="col col-stats ms-3 ms-sm-0">
+                        <div class="numbers">
+                            <p class="card-category">Acciones en curso</p>
+                            <h4 class="card-title">13</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-md-3">
+        <div class="card card-stats card-round">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-icon">
+                        <div class="icon-big text-center icon-primary bubble-shadow-small">
+                            <i class="fas fa-diagram-project"></i>
+                        </div>
+                    </div>
+                    <div class="col col-stats ms-3 ms-sm-0">
+                        <div class="numbers">
+                            <p class="card-category">Proyectos activos</p>
+                            <h4 class="card-title">5</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card card-round">
+            <div class="card-header">
+                <div class="card-head-row">
+                    <div class="card-title">Cola operativa</div>
+                    <div class="card-tools">
+                        <a href="/" class="btn btn-label-success btn-round btn-sm me-2">Ver todas</a>
+                        <a href="/" class="btn btn-label-primary btn-round btn-sm">Nueva incidencia</a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table align-items-center mb-0">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Codigo</th>
+                                <th>Descripcion</th>
+                                <th>Area</th>
+                                <th>Prioridad</th>
+                                <th class="text-end">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>INC-2026-001</td>
+                                <td>Parada no planificada en linea de embalaje</td>
+                                <td>Produccion</td>
+                                <td><span class="badge badge-danger">Alta</span></td>
+                                <td class="text-end"><span class="badge badge-warning">En analisis</span></td>
+                            </tr>
+                            <tr>
+                                <td>INC-2026-004</td>
+                                <td>Desviacion de calidad en lote de salida</td>
+                                <td>Calidad</td>
+                                <td><span class="badge badge-warning">Media</span></td>
+                                <td class="text-end"><span class="badge badge-primary">Abierta</span></td>
+                            </tr>
+                            <tr>
+                                <td>INC-2026-009</td>
+                                <td>Incidencia repetitiva en mantenimiento preventivo</td>
+                                <td>Mantenimiento</td>
+                                <td><span class="badge badge-warning">Media</span></td>
+                                <td class="text-end"><span class="badge badge-info">Planificada</span></td>
+                            </tr>
+                            <tr>
+                                <td>INC-2026-012</td>
+                                <td>Riesgo detectado en auditoria interna</td>
+                                <td>Seguridad</td>
+                                <td><span class="badge badge-danger">Alta</span></td>
+                                <td class="text-end"><span class="badge badge-warning">En analisis</span></td>
+                            </tr>
+                            <tr>
+                                <td>INC-2026-015</td>
+                                <td>Averia puntual en sistema de etiquetado</td>
+                                <td>Produccion</td>
+                                <td><span class="badge badge-success">Baja</span></td>
+                                <td class="text-end"><span class="badge badge-success">Resuelta</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card card-round">
+            <div class="card-header">
+                <div class="card-title">Accesos rapidos</div>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-3">
+                    <a href="/" class="btn btn-primary btn-round text-start">
+                        <i class="fas fa-plus me-2"></i>
+                        Registrar incidencia
+                    </a>
+                    <a href="/" class="btn btn-label-info btn-round text-start">
+                        <i class="fas fa-filter me-2"></i>
+                        Revisar pendientes
+                    </a>
+                    <a href="/" class="btn btn-label-success btn-round text-start">
+                        <i class="fas fa-list-check me-2"></i>
+                        Abrir acciones de mejora
+                    </a>
+                    <a href="/" class="btn btn-label-secondary btn-round text-start">
+                        <i class="fas fa-diagram-project me-2"></i>
+                        Consultar proyectos
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-round">
+            <div class="card-header">
+                <div class="card-title">Prioridades del dia</div>
+            </div>
+            <div class="card-body pb-0">
+                <div class="d-flex">
+                    <div class="avatar">
+                        <span class="avatar-title rounded-circle border border-white bg-danger">1</span>
+                    </div>
+                    <div class="flex-1 pt-1 ms-2">
+                        <h6 class="fw-bold mb-1">Linea de embalaje</h6>
+                        <small class="text-muted">Parada abierta pendiente de validacion tecnica</small>
+                    </div>
+                </div>
+                <div class="separator-dashed"></div>
+                <div class="d-flex">
+                    <div class="avatar">
+                        <span class="avatar-title rounded-circle border border-white bg-warning">2</span>
+                    </div>
+                    <div class="flex-1 pt-1 ms-2">
+                        <h6 class="fw-bold mb-1">Calidad</h6>
+                        <small class="text-muted">Revision de lote bloqueado y decision de disposicion</small>
+                    </div>
+                </div>
+                <div class="separator-dashed"></div>
+                <div class="d-flex pb-3">
+                    <div class="avatar">
+                        <span class="avatar-title rounded-circle border border-white bg-info">3</span>
+                    </div>
+                    <div class="flex-1 pt-1 ms-2">
+                        <h6 class="fw-bold mb-1">Mejora continua</h6>
+                        <small class="text-muted">Seguimiento de accion correctiva con vencimiento hoy</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

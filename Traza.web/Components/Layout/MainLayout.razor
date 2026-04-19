@@ -1,11 +1,180 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 
 <RadzenDialog />
 <RadzenNotification />
 <RadzenTooltip />
 <RadzenContextMenu />
 
-@Body
+<div class="wrapper">
+    <aside class="sidebar" data-background-color="dark">
+        <div class="sidebar-logo">
+            <div class="logo-header" data-background-color="dark">
+                <a href="/" class="logo">
+                    <img src="kaiadmin/assets/img/kaiadmin/logo_light.svg" alt="Traza" class="navbar-brand" height="20" />
+                </a>
+                <div class="nav-toggle">
+                    <button class="btn btn-toggle toggle-sidebar" type="button">
+                        <i class="gg-menu-right"></i>
+                    </button>
+                    <button class="btn btn-toggle sidenav-toggler" type="button">
+                        <i class="gg-menu-left"></i>
+                    </button>
+                </div>
+                <button class="topbar-toggler more" type="button">
+                    <i class="gg-more-vertical-alt"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="sidebar-wrapper scrollbar scrollbar-inner">
+            <div class="sidebar-content">
+                <ul class="nav nav-secondary">
+                    <li class="nav-item active">
+                        <a href="/">
+                            <i class="fas fa-home"></i>
+                            <p>Dashboard</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-section">
+                        <span class="sidebar-mini-icon">
+                            <i class="fa fa-ellipsis-h"></i>
+                        </span>
+                        <h4 class="text-section">Gestion</h4>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="/">
+                            <i class="fas fa-triangle-exclamation"></i>
+                            <p>Incidencias</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="/">
+                            <i class="fas fa-list-check"></i>
+                            <p>Acciones</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="/">
+                            <i class="fas fa-diagram-project"></i>
+                            <p>Proyectos</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-section">
+                        <span class="sidebar-mini-icon">
+                            <i class="fa fa-ellipsis-h"></i>
+                        </span>
+                        <h4 class="text-section">Sistema</h4>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="/">
+                            <i class="fas fa-users-gear"></i>
+                            <p>Usuarios y roles</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="/">
+                            <i class="fas fa-clock-rotate-left"></i>
+                            <p>Auditoria</p>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </aside>
+
+    <div class="main-panel">
+        <div class="main-header">
+            <div class="main-header-logo">
+                <div class="logo-header" data-background-color="dark">
+                    <a href="/" class="logo">
+                        <img src="kaiadmin/assets/img/kaiadmin/logo_light.svg" alt="Traza" class="navbar-brand" height="20" />
+                    </a>
+                    <div class="nav-toggle">
+                        <button class="btn btn-toggle toggle-sidebar" type="button">
+                            <i class="gg-menu-right"></i>
+                        </button>
+                        <button class="btn btn-toggle sidenav-toggler" type="button">
+                            <i class="gg-menu-left"></i>
+                        </button>
+                    </div>
+                    <button class="topbar-toggler more" type="button">
+                        <i class="gg-more-vertical-alt"></i>
+                    </button>
+                </div>
+            </div>
+
+            <nav class="navbar navbar-header navbar-header-transparent navbar-expand-lg border-bottom">
+                <div class="container-fluid">
+                    <div>
+                        <div class="fw-semibold traza-app-name">Traza</div>
+                        <div class="small text-muted">Gestion industrial de incidencias, acciones y proyectos</div>
+                    </div>
+
+                    <ul class="navbar-nav topbar-nav ms-md-auto align-items-center">
+                        <li class="nav-item me-2 d-none d-md-block">
+                            <a class="btn btn-primary btn-round" href="/">
+                                <i class="fas fa-plus me-1"></i>
+                                Nueva incidencia
+                            </a>
+                        </li>
+                        <li class="nav-item topbar-user dropdown hidden-caret">
+                            <a class="dropdown-toggle profile-pic" data-bs-toggle="dropdown" href="#" aria-expanded="false">
+                                <div class="avatar-sm">
+                                    <span class="avatar-title rounded-circle border border-white bg-primary">TR</span>
+                                </div>
+                                <span class="profile-username">
+                                    <span class="op-7">Entorno</span>
+                                    <span class="fw-bold">Local</span>
+                                </span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-user animated fadeIn">
+                                <li>
+                                    <div class="dropdown-item-text">
+                                        Base visual Kaiadmin integrada en Blazor y lista para seguir creciendo.
+                                    </div>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </div>
+
+        <div class="container">
+            <div class="page-inner">
+                @Body
+            </div>
+        </div>
+
+        <footer class="footer">
+            <div class="container-fluid">
+                <nav class="pull-left">
+                    <ul class="nav">
+                        <li class="nav-item">
+                            <span class="nav-link ps-0">Traza</span>
+                        </li>
+                        <li class="nav-item">
+                            <span class="nav-link">Blazor Web App</span>
+                        </li>
+                        <li class="nav-item">
+                            <span class="nav-link">SQL Server</span>
+                        </li>
+                    </ul>
+                </nav>
+                <div class="copyright ms-auto">
+                    Base administrativa lista para evolucionar sobre incidencias, acciones y proyectos.
+                </div>
+            </div>
+        </footer>
+    </div>
+</div>
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
