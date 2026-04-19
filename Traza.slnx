@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/Elementos de la solución/">
+    <File Path="AGENTS.md" />
+    <File Path="README.md" />
+    <File Path="Traza.web/.gitignore" />
+  </Folder>
+  <Project Path="Traza.web/Traza.Web.csproj" />
+</Solution>
