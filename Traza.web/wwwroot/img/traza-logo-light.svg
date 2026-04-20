@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 64" role="img" aria-labelledby="trazaLogoTitle">
+  <title id="trazaLogoTitle">Traza</title>
+  <defs>
+    <linearGradient id="traza-accent" x1="8" y1="54" x2="98" y2="10" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1f7aff"/>
+      <stop offset="0.55" stop-color="#1657d8"/>
+      <stop offset="1" stop-color="#1ec6a4"/>
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(4 4)">
+    <path d="M10 43.5C32 44.6 51.2 43.2 73 34.8" fill="none" stroke="#1657d8" stroke-width="6.5" stroke-linecap="round"/>
+    <path d="M35.5 28C50.8 28.8 61.5 31.6 76 38" fill="none" stroke="#1657d8" stroke-width="6.5" stroke-linecap="round"/>
+    <path d="M48 16C57 10.1 66.2 7.7 77.8 7.7" fill="none" stroke="#1657d8" stroke-width="6.5" stroke-linecap="round"/>
+    <circle cx="10" cy="43.5" r="9.5" fill="url(#traza-accent)"/>
+    <circle cx="35.5" cy="28" r="9.5" fill="url(#traza-accent)"/>
+    <circle cx="77.8" cy="7.7" r="9.5" fill="#1ec6a4"/>
+    <circle cx="71.5" cy="38" r="14.5" fill="#39cf38"/>
+    <path d="M64.2 38.3l5.1 5 10-12.1" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="4.8"/>
+  </g>
+
+  <text x="108" y="45" fill="#ffffff" font-family="'Public Sans', sans-serif" font-size="42" font-weight="700" letter-spacing="0.2">Traza</text>
+</svg>
