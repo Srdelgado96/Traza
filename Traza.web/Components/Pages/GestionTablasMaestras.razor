@@ -1,0 +1,709 @@
+@page "/gestion-tablas-maestras"
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@using Traza.Web.Data
+@using Traza.Web.Data.Entidades
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<PageTitle>Gestion de Tablas Maestras | Traza</PageTitle>
+
+@if (cargando)
+{
+    <div class="card card-round">
+        <div class="card-body py-5 text-center">
+            <RadzenProgressBarCircular Mode="ProgressBarMode.Indeterminate" />
+            <div class="mt-3 text-muted">Cargando catalogos...</div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row">
+        <div class="col-12">
+            <div class="card card-round">
+                <div class="card-header">
+                    <div class="card-title">Catalogos editables</div>
+                    <div class="card-category">Aqui puedes mantener procesos, tipologias, areas y otras tablas maestras sin tocar codigo.</div>
+                </div>
+                <div class="card-body">
+                    <RadzenTabs>
+                        <Tabs>
+                            <RadzenTabsItem Text="Departamentos">
+                                <div class="row g-4">
+                                    <div class="col-lg-4">
+                                        <div class="catalogo-form">
+                                            <label class="form-label">Nombre</label>
+                                            <RadzenTextBox @bind-Value="departamentoNombre" Name="DepartamentoNombre" Style="width:100%;" />
+                                            <div class="mt-3 d-flex gap-2">
+                                                <RadzenButton Text="Nuevo" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@LimpiarDepartamento" />
+                                                <RadzenButton Text="Guardar" Icon="save" Click="@GuardarDepartamentoAsync" />
+                                                <RadzenButton Text="Eliminar" Icon="delete" ButtonStyle="ButtonStyle.Danger" Disabled="@(departamentoSeleccionado is null)" Click="@EliminarDepartamentoAsync" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <RadzenDataGrid Data="@departamentos" TItem="Departamento" RowSelect="@SeleccionarDepartamento" AllowPaging="true" PageSize="8">
+                                            <Columns>
+                                                <RadzenDataGridColumn TItem="Departamento" Property="Id" Title="Id" Width="90px" />
+                                                <RadzenDataGridColumn TItem="Departamento" Property="Nombre" Title="Nombre" />
+                                            </Columns>
+                                        </RadzenDataGrid>
+                                    </div>
+                                </div>
+                            </RadzenTabsItem>
+
+                            <RadzenTabsItem Text="Procesos">
+                                <div class="row g-4">
+                                    <div class="col-lg-4">
+                                        <div class="catalogo-form">
+                                            <label class="form-label">Nombre</label>
+                                            <RadzenTextBox @bind-Value="procesoNombre" Name="ProcesoNombre" Style="width:100%;" />
+                                            <div class="mt-3 d-flex gap-2">
+                                                <RadzenButton Text="Nuevo" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@LimpiarProceso" />
+                                                <RadzenButton Text="Guardar" Icon="save" Click="@GuardarProcesoAsync" />
+                                                <RadzenButton Text="Eliminar" Icon="delete" ButtonStyle="ButtonStyle.Danger" Disabled="@(procesoSeleccionado is null)" Click="@EliminarProcesoAsync" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <RadzenDataGrid Data="@procesos" TItem="Proceso" RowSelect="@SeleccionarProceso" AllowPaging="true" PageSize="8">
+                                            <Columns>
+                                                <RadzenDataGridColumn TItem="Proceso" Property="Id" Title="Id" Width="90px" />
+                                                <RadzenDataGridColumn TItem="Proceso" Property="Nombre" Title="Nombre" />
+                                            </Columns>
+                                        </RadzenDataGrid>
+                                    </div>
+                                </div>
+                            </RadzenTabsItem>
+
+                            <RadzenTabsItem Text="Tipologias">
+                                <div class="row g-4">
+                                    <div class="col-lg-4">
+                                        <div class="catalogo-form">
+                                            <label class="form-label">Proceso</label>
+                                            <RadzenDropDown Data="@procesos"
+                                                            TextProperty="Nombre"
+                                                            ValueProperty="Id"
+                                                            @bind-Value="tipologiaProcesoId"
+                                                            Style="width:100%;" />
+                                            <label class="form-label mt-3">Nombre</label>
+                                            <RadzenTextBox @bind-Value="tipologiaNombre" Name="TipologiaNombre" Style="width:100%;" />
+                                            <div class="form-check mt-3">
+                                                <input class="form-check-input" type="checkbox" id="tipologiaActiva" @bind="tipologiaActiva" />
+                                                <label class="form-check-label" for="tipologiaActiva">Activa</label>
+                                            </div>
+                                            <div class="mt-3 d-flex gap-2">
+                                                <RadzenButton Text="Nuevo" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@LimpiarTipologia" />
+                                                <RadzenButton Text="Guardar" Icon="save" Click="@GuardarTipologiaAsync" />
+                                                <RadzenButton Text="Eliminar" Icon="delete" ButtonStyle="ButtonStyle.Danger" Disabled="@(tipologiaSeleccionada is null)" Click="@EliminarTipologiaAsync" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <RadzenDataGrid Data="@tipologias" TItem="TipologiaIncidencia" RowSelect="@SeleccionarTipologia" AllowPaging="true" PageSize="10">
+                                            <Columns>
+                                                <RadzenDataGridColumn TItem="TipologiaIncidencia" Property="Id" Title="Id" Width="80px" />
+                                                <RadzenDataGridColumn TItem="TipologiaIncidencia" Title="Proceso">
+                                                    <Template Context="item">@item.Proceso.Nombre</Template>
+                                                </RadzenDataGridColumn>
+                                                <RadzenDataGridColumn TItem="TipologiaIncidencia" Property="Nombre" Title="Nombre" />
+                                                <RadzenDataGridColumn TItem="TipologiaIncidencia" Title="Activa" Width="110px">
+                                                    <Template Context="item">@(item.Activa ? "Si" : "No")</Template>
+                                                </RadzenDataGridColumn>
+                                            </Columns>
+                                        </RadzenDataGrid>
+                                    </div>
+                                </div>
+                            </RadzenTabsItem>
+
+                            <RadzenTabsItem Text="Areas de proyecto">
+                                <div class="row g-4">
+                                    <div class="col-lg-4">
+                                        <div class="catalogo-form">
+                                            <label class="form-label">Nombre</label>
+                                            <RadzenTextBox @bind-Value="areaProyectoNombre" Name="AreaProyectoNombre" Style="width:100%;" />
+                                            <div class="mt-3 d-flex gap-2">
+                                                <RadzenButton Text="Nuevo" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@LimpiarAreaProyecto" />
+                                                <RadzenButton Text="Guardar" Icon="save" Click="@GuardarAreaProyectoAsync" />
+                                                <RadzenButton Text="Eliminar" Icon="delete" ButtonStyle="ButtonStyle.Danger" Disabled="@(areaProyectoSeleccionada is null)" Click="@EliminarAreaProyectoAsync" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <RadzenDataGrid Data="@areasProyecto" TItem="AreaProyecto" RowSelect="@SeleccionarAreaProyecto" AllowPaging="true" PageSize="8">
+                                            <Columns>
+                                                <RadzenDataGridColumn TItem="AreaProyecto" Property="Id" Title="Id" Width="90px" />
+                                                <RadzenDataGridColumn TItem="AreaProyecto" Property="Nombre" Title="Nombre" />
+                                            </Columns>
+                                        </RadzenDataGrid>
+                                    </div>
+                                </div>
+                            </RadzenTabsItem>
+
+                            <RadzenTabsItem Text="Tipos documento">
+                                <div class="row g-4">
+                                    <div class="col-lg-4">
+                                        <div class="catalogo-form">
+                                            <label class="form-label">Nombre</label>
+                                            <RadzenTextBox @bind-Value="tipoDocumentoNombre" Name="TipoDocumentoNombre" Style="width:100%;" />
+                                            <div class="mt-3 d-flex gap-2">
+                                                <RadzenButton Text="Nuevo" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@LimpiarTipoDocumento" />
+                                                <RadzenButton Text="Guardar" Icon="save" Click="@GuardarTipoDocumentoAsync" />
+                                                <RadzenButton Text="Eliminar" Icon="delete" ButtonStyle="ButtonStyle.Danger" Disabled="@(tipoDocumentoSeleccionado is null)" Click="@EliminarTipoDocumentoAsync" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <RadzenDataGrid Data="@tiposDocumento" TItem="TipoDocumentoReferencia" RowSelect="@SeleccionarTipoDocumento" AllowPaging="true" PageSize="8">
+                                            <Columns>
+                                                <RadzenDataGridColumn TItem="TipoDocumentoReferencia" Property="Id" Title="Id" Width="90px" />
+                                                <RadzenDataGridColumn TItem="TipoDocumentoReferencia" Property="Nombre" Title="Nombre" />
+                                            </Columns>
+                                        </RadzenDataGrid>
+                                    </div>
+                                </div>
+                            </RadzenTabsItem>
+
+                            <RadzenTabsItem Text="Tipos adjunto">
+                                <div class="row g-4">
+                                    <div class="col-lg-4">
+                                        <div class="catalogo-form">
+                                            <label class="form-label">Nombre</label>
+                                            <RadzenTextBox @bind-Value="tipoAdjuntoNombre" Name="TipoAdjuntoNombre" Style="width:100%;" />
+                                            <div class="mt-3 d-flex gap-2">
+                                                <RadzenButton Text="Nuevo" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@LimpiarTipoAdjunto" />
+                                                <RadzenButton Text="Guardar" Icon="save" Click="@GuardarTipoAdjuntoAsync" />
+                                                <RadzenButton Text="Eliminar" Icon="delete" ButtonStyle="ButtonStyle.Danger" Disabled="@(tipoAdjuntoSeleccionado is null)" Click="@EliminarTipoAdjuntoAsync" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <RadzenDataGrid Data="@tiposAdjunto" TItem="TipoAdjunto" RowSelect="@SeleccionarTipoAdjunto" AllowPaging="true" PageSize="8">
+                                            <Columns>
+                                                <RadzenDataGridColumn TItem="TipoAdjunto" Property="Id" Title="Id" Width="90px" />
+                                                <RadzenDataGridColumn TItem="TipoAdjunto" Property="Nombre" Title="Nombre" />
+                                            </Columns>
+                                        </RadzenDataGrid>
+                                    </div>
+                                </div>
+                            </RadzenTabsItem>
+
+                            <RadzenTabsItem Text="Origenes mejora">
+                                <div class="row g-4">
+                                    <div class="col-lg-4">
+                                        <div class="catalogo-form">
+                                            <label class="form-label">Nombre</label>
+                                            <RadzenTextBox @bind-Value="origenAccionNombre" Name="OrigenAccionNombre" Style="width:100%;" />
+                                            <div class="mt-3 d-flex gap-2">
+                                                <RadzenButton Text="Nuevo" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@LimpiarOrigenAccion" />
+                                                <RadzenButton Text="Guardar" Icon="save" Click="@GuardarOrigenAccionAsync" />
+                                                <RadzenButton Text="Eliminar" Icon="delete" ButtonStyle="ButtonStyle.Danger" Disabled="@(origenAccionSeleccionado is null)" Click="@EliminarOrigenAccionAsync" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <RadzenDataGrid Data="@origenesAccion" TItem="OrigenAccionMejora" RowSelect="@SeleccionarOrigenAccion" AllowPaging="true" PageSize="8">
+                                            <Columns>
+                                                <RadzenDataGridColumn TItem="OrigenAccionMejora" Property="Id" Title="Id" Width="90px" />
+                                                <RadzenDataGridColumn TItem="OrigenAccionMejora" Property="Nombre" Title="Nombre" />
+                                            </Columns>
+                                        </RadzenDataGrid>
+                                    </div>
+                                </div>
+                            </RadzenTabsItem>
+
+                            <RadzenTabsItem Text="Tipos accion">
+                                <div class="row g-4">
+                                    <div class="col-lg-4">
+                                        <div class="catalogo-form">
+                                            <label class="form-label">Nombre</label>
+                                            <RadzenTextBox @bind-Value="tipoAccionNombre" Name="TipoAccionNombre" Style="width:100%;" />
+                                            <div class="mt-3 d-flex gap-2">
+                                                <RadzenButton Text="Nuevo" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@LimpiarTipoAccion" />
+                                                <RadzenButton Text="Guardar" Icon="save" Click="@GuardarTipoAccionAsync" />
+                                                <RadzenButton Text="Eliminar" Icon="delete" ButtonStyle="ButtonStyle.Danger" Disabled="@(tipoAccionSeleccionado is null)" Click="@EliminarTipoAccionAsync" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <RadzenDataGrid Data="@tiposAccion" TItem="TipoAccionMejora" RowSelect="@SeleccionarTipoAccion" AllowPaging="true" PageSize="8">
+                                            <Columns>
+                                                <RadzenDataGridColumn TItem="TipoAccionMejora" Property="Id" Title="Id" Width="90px" />
+                                                <RadzenDataGridColumn TItem="TipoAccionMejora" Property="Nombre" Title="Nombre" />
+                                            </Columns>
+                                        </RadzenDataGrid>
+                                    </div>
+                                </div>
+                            </RadzenTabsItem>
+                        </Tabs>
+                    </RadzenTabs>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool cargando = true;
+
+    private List<Departamento> departamentos = [];
+    private Departamento? departamentoSeleccionado;
+    private string departamentoNombre = string.Empty;
+
+    private List<Proceso> procesos = [];
+    private Proceso? procesoSeleccionado;
+    private string procesoNombre = string.Empty;
+
+    private List<TipologiaIncidencia> tipologias = [];
+    private TipologiaIncidencia? tipologiaSeleccionada;
+    private int? tipologiaProcesoId;
+    private string tipologiaNombre = string.Empty;
+    private bool tipologiaActiva = true;
+
+    private List<AreaProyecto> areasProyecto = [];
+    private AreaProyecto? areaProyectoSeleccionada;
+    private string areaProyectoNombre = string.Empty;
+
+    private List<TipoDocumentoReferencia> tiposDocumento = [];
+    private TipoDocumentoReferencia? tipoDocumentoSeleccionado;
+    private string tipoDocumentoNombre = string.Empty;
+
+    private List<TipoAdjunto> tiposAdjunto = [];
+    private TipoAdjunto? tipoAdjuntoSeleccionado;
+    private string tipoAdjuntoNombre = string.Empty;
+
+    private List<OrigenAccionMejora> origenesAccion = [];
+    private OrigenAccionMejora? origenAccionSeleccionado;
+    private string origenAccionNombre = string.Empty;
+
+    private List<TipoAccionMejora> tiposAccion = [];
+    private TipoAccionMejora? tipoAccionSeleccionado;
+    private string tipoAccionNombre = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RecargarTodoAsync();
+        tipologiaProcesoId ??= procesos.FirstOrDefault()?.Id;
+        cargando = false;
+    }
+
+    private async Task RecargarTodoAsync()
+    {
+        await using var db = await DbContextFactory.CreateDbContextAsync();
+
+        departamentos = await db.Departamentos.AsNoTracking().OrderBy(x => x.Nombre).ToListAsync();
+        procesos = await db.Procesos.AsNoTracking().OrderBy(x => x.Nombre).ToListAsync();
+        tipologias = await db.TipologiasIncidencia.AsNoTracking().Include(x => x.Proceso).OrderBy(x => x.Proceso.Nombre).ThenBy(x => x.Nombre).ToListAsync();
+        areasProyecto = await db.AreasProyecto.AsNoTracking().OrderBy(x => x.Nombre).ToListAsync();
+        tiposDocumento = await db.TiposDocumentoReferencia.AsNoTracking().OrderBy(x => x.Nombre).ToListAsync();
+        tiposAdjunto = await db.TiposAdjunto.AsNoTracking().OrderBy(x => x.Nombre).ToListAsync();
+        origenesAccion = await db.OrigenesAccionMejora.AsNoTracking().OrderBy(x => x.Nombre).ToListAsync();
+        tiposAccion = await db.TiposAccionMejora.AsNoTracking().OrderBy(x => x.Nombre).ToListAsync();
+    }
+
+    private async Task GuardarDepartamentoAsync()
+    {
+        if (!ValidarTexto(departamentoNombre, "El nombre del departamento es obligatorio.")) return;
+
+        await using var db = await DbContextFactory.CreateDbContextAsync();
+        if (departamentoSeleccionado is null)
+        {
+            db.Departamentos.Add(new Departamento { Nombre = departamentoNombre.Trim() });
+        }
+        else
+        {
+            var entidad = await db.Departamentos.FindAsync(departamentoSeleccionado.Id);
+            if (entidad is null) return;
+            entidad.Nombre = departamentoNombre.Trim();
+        }
+
+        await GuardarCambiosAsync(db, "Departamento guardado.");
+        await RecargarTodoAsync();
+        LimpiarDepartamento();
+    }
+
+    private async Task EliminarDepartamentoAsync()
+    {
+        await EliminarEntidadAsync<Departamento>(departamentoSeleccionado?.Id, "Eliminar departamento", "Este departamento se eliminara si no esta en uso.");
+        await RecargarTodoAsync();
+        LimpiarDepartamento();
+    }
+
+    private void SeleccionarDepartamento(Departamento item)
+    {
+        departamentoSeleccionado = item;
+        departamentoNombre = item.Nombre;
+    }
+
+    private void LimpiarDepartamento()
+    {
+        departamentoSeleccionado = null;
+        departamentoNombre = string.Empty;
+    }
+
+    private async Task GuardarProcesoAsync()
+    {
+        if (!ValidarTexto(procesoNombre, "El nombre del proceso es obligatorio.")) return;
+
+        await using var db = await DbContextFactory.CreateDbContextAsync();
+        if (procesoSeleccionado is null)
+        {
+            db.Procesos.Add(new Proceso { Nombre = procesoNombre.Trim() });
+        }
+        else
+        {
+            var entidad = await db.Procesos.FindAsync(procesoSeleccionado.Id);
+            if (entidad is null) return;
+            entidad.Nombre = procesoNombre.Trim();
+        }
+
+        await GuardarCambiosAsync(db, "Proceso guardado.");
+        await RecargarTodoAsync();
+        LimpiarProceso();
+    }
+
+    private async Task EliminarProcesoAsync()
+    {
+        await EliminarEntidadAsync<Proceso>(procesoSeleccionado?.Id, "Eliminar proceso", "Este proceso se eliminara si no esta relacionado con otros registros.");
+        await RecargarTodoAsync();
+        LimpiarProceso();
+    }
+
+    private void SeleccionarProceso(Proceso item)
+    {
+        procesoSeleccionado = item;
+        procesoNombre = item.Nombre;
+    }
+
+    private void LimpiarProceso()
+    {
+        procesoSeleccionado = null;
+        procesoNombre = string.Empty;
+    }
+
+    private async Task GuardarTipologiaAsync()
+    {
+        if (!tipologiaProcesoId.HasValue)
+        {
+            MostrarAviso("Debes seleccionar un proceso.");
+            return;
+        }
+
+        if (!ValidarTexto(tipologiaNombre, "El nombre de la tipologia es obligatorio.")) return;
+
+        await using var db = await DbContextFactory.CreateDbContextAsync();
+        if (tipologiaSeleccionada is null)
+        {
+            db.TipologiasIncidencia.Add(new TipologiaIncidencia
+            {
+                Nombre = tipologiaNombre.Trim(),
+                ProcesoId = tipologiaProcesoId.Value,
+                Activa = tipologiaActiva
+            });
+        }
+        else
+        {
+            var entidad = await db.TipologiasIncidencia.FindAsync(tipologiaSeleccionada.Id);
+            if (entidad is null) return;
+            entidad.Nombre = tipologiaNombre.Trim();
+            entidad.ProcesoId = tipologiaProcesoId.Value;
+            entidad.Activa = tipologiaActiva;
+        }
+
+        await GuardarCambiosAsync(db, "Tipologia guardada.");
+        await RecargarTodoAsync();
+        LimpiarTipologia();
+    }
+
+    private async Task EliminarTipologiaAsync()
+    {
+        await EliminarEntidadAsync<TipologiaIncidencia>(tipologiaSeleccionada?.Id, "Eliminar tipologia", "La tipologia se eliminara si no esta usada por incidencias.");
+        await RecargarTodoAsync();
+        LimpiarTipologia();
+    }
+
+    private void SeleccionarTipologia(TipologiaIncidencia item)
+    {
+        tipologiaSeleccionada = item;
+        tipologiaNombre = item.Nombre;
+        tipologiaProcesoId = item.ProcesoId;
+        tipologiaActiva = item.Activa;
+    }
+
+    private void LimpiarTipologia()
+    {
+        tipologiaSeleccionada = null;
+        tipologiaProcesoId = procesos.FirstOrDefault()?.Id;
+        tipologiaNombre = string.Empty;
+        tipologiaActiva = true;
+    }
+
+    private async Task GuardarAreaProyectoAsync()
+    {
+        if (!ValidarTexto(areaProyectoNombre, "El nombre del area es obligatorio.")) return;
+
+        await using var db = await DbContextFactory.CreateDbContextAsync();
+        if (areaProyectoSeleccionada is null)
+        {
+            db.AreasProyecto.Add(new AreaProyecto { Nombre = areaProyectoNombre.Trim() });
+        }
+        else
+        {
+            var entidad = await db.AreasProyecto.FindAsync(areaProyectoSeleccionada.Id);
+            if (entidad is null) return;
+            entidad.Nombre = areaProyectoNombre.Trim();
+        }
+
+        await GuardarCambiosAsync(db, "Area guardada.");
+        await RecargarTodoAsync();
+        LimpiarAreaProyecto();
+    }
+
+    private async Task EliminarAreaProyectoAsync()
+    {
+        await EliminarEntidadAsync<AreaProyecto>(areaProyectoSeleccionada?.Id, "Eliminar area", "El area se eliminara si no esta relacionada con proyectos.");
+        await RecargarTodoAsync();
+        LimpiarAreaProyecto();
+    }
+
+    private void SeleccionarAreaProyecto(AreaProyecto item)
+    {
+        areaProyectoSeleccionada = item;
+        areaProyectoNombre = item.Nombre;
+    }
+
+    private void LimpiarAreaProyecto()
+    {
+        areaProyectoSeleccionada = null;
+        areaProyectoNombre = string.Empty;
+    }
+
+    private async Task GuardarTipoDocumentoAsync()
+    {
+        if (!ValidarTexto(tipoDocumentoNombre, "El nombre del tipo de documento es obligatorio.")) return;
+
+        await using var db = await DbContextFactory.CreateDbContextAsync();
+        if (tipoDocumentoSeleccionado is null)
+        {
+            db.TiposDocumentoReferencia.Add(new TipoDocumentoReferencia { Nombre = tipoDocumentoNombre.Trim() });
+        }
+        else
+        {
+            var entidad = await db.TiposDocumentoReferencia.FindAsync(tipoDocumentoSeleccionado.Id);
+            if (entidad is null) return;
+            entidad.Nombre = tipoDocumentoNombre.Trim();
+        }
+
+        await GuardarCambiosAsync(db, "Tipo de documento guardado.");
+        await RecargarTodoAsync();
+        LimpiarTipoDocumento();
+    }
+
+    private async Task EliminarTipoDocumentoAsync()
+    {
+        await EliminarEntidadAsync<TipoDocumentoReferencia>(tipoDocumentoSeleccionado?.Id, "Eliminar tipo de documento", "Se eliminara si no esta en uso.");
+        await RecargarTodoAsync();
+        LimpiarTipoDocumento();
+    }
+
+    private void SeleccionarTipoDocumento(TipoDocumentoReferencia item)
+    {
+        tipoDocumentoSeleccionado = item;
+        tipoDocumentoNombre = item.Nombre;
+    }
+
+    private void LimpiarTipoDocumento()
+    {
+        tipoDocumentoSeleccionado = null;
+        tipoDocumentoNombre = string.Empty;
+    }
+
+    private async Task GuardarTipoAdjuntoAsync()
+    {
+        if (!ValidarTexto(tipoAdjuntoNombre, "El nombre del tipo de adjunto es obligatorio.")) return;
+
+        await using var db = await DbContextFactory.CreateDbContextAsync();
+        if (tipoAdjuntoSeleccionado is null)
+        {
+            db.TiposAdjunto.Add(new TipoAdjunto { Nombre = tipoAdjuntoNombre.Trim() });
+        }
+        else
+        {
+            var entidad = await db.TiposAdjunto.FindAsync(tipoAdjuntoSeleccionado.Id);
+            if (entidad is null) return;
+            entidad.Nombre = tipoAdjuntoNombre.Trim();
+        }
+
+        await GuardarCambiosAsync(db, "Tipo de adjunto guardado.");
+        await RecargarTodoAsync();
+        LimpiarTipoAdjunto();
+    }
+
+    private async Task EliminarTipoAdjuntoAsync()
+    {
+        await EliminarEntidadAsync<TipoAdjunto>(tipoAdjuntoSeleccionado?.Id, "Eliminar tipo de adjunto", "Se eliminara si no esta en uso.");
+        await RecargarTodoAsync();
+        LimpiarTipoAdjunto();
+    }
+
+    private void SeleccionarTipoAdjunto(TipoAdjunto item)
+    {
+        tipoAdjuntoSeleccionado = item;
+        tipoAdjuntoNombre = item.Nombre;
+    }
+
+    private void LimpiarTipoAdjunto()
+    {
+        tipoAdjuntoSeleccionado = null;
+        tipoAdjuntoNombre = string.Empty;
+    }
+
+    private async Task GuardarOrigenAccionAsync()
+    {
+        if (!ValidarTexto(origenAccionNombre, "El nombre del origen es obligatorio.")) return;
+
+        await using var db = await DbContextFactory.CreateDbContextAsync();
+        if (origenAccionSeleccionado is null)
+        {
+            db.OrigenesAccionMejora.Add(new OrigenAccionMejora { Nombre = origenAccionNombre.Trim() });
+        }
+        else
+        {
+            var entidad = await db.OrigenesAccionMejora.FindAsync(origenAccionSeleccionado.Id);
+            if (entidad is null) return;
+            entidad.Nombre = origenAccionNombre.Trim();
+        }
+
+        await GuardarCambiosAsync(db, "Origen guardado.");
+        await RecargarTodoAsync();
+        LimpiarOrigenAccion();
+    }
+
+    private async Task EliminarOrigenAccionAsync()
+    {
+        await EliminarEntidadAsync<OrigenAccionMejora>(origenAccionSeleccionado?.Id, "Eliminar origen", "Se eliminara si no esta en uso.");
+        await RecargarTodoAsync();
+        LimpiarOrigenAccion();
+    }
+
+    private void SeleccionarOrigenAccion(OrigenAccionMejora item)
+    {
+        origenAccionSeleccionado = item;
+        origenAccionNombre = item.Nombre;
+    }
+
+    private void LimpiarOrigenAccion()
+    {
+        origenAccionSeleccionado = null;
+        origenAccionNombre = string.Empty;
+    }
+
+    private async Task GuardarTipoAccionAsync()
+    {
+        if (!ValidarTexto(tipoAccionNombre, "El nombre del tipo de accion es obligatorio.")) return;
+
+        await using var db = await DbContextFactory.CreateDbContextAsync();
+        if (tipoAccionSeleccionado is null)
+        {
+            db.TiposAccionMejora.Add(new TipoAccionMejora { Nombre = tipoAccionNombre.Trim() });
+        }
+        else
+        {
+            var entidad = await db.TiposAccionMejora.FindAsync(tipoAccionSeleccionado.Id);
+            if (entidad is null) return;
+            entidad.Nombre = tipoAccionNombre.Trim();
+        }
+
+        await GuardarCambiosAsync(db, "Tipo de accion guardado.");
+        await RecargarTodoAsync();
+        LimpiarTipoAccion();
+    }
+
+    private async Task EliminarTipoAccionAsync()
+    {
+        await EliminarEntidadAsync<TipoAccionMejora>(tipoAccionSeleccionado?.Id, "Eliminar tipo de accion", "Se eliminara si no esta en uso.");
+        await RecargarTodoAsync();
+        LimpiarTipoAccion();
+    }
+
+    private void SeleccionarTipoAccion(TipoAccionMejora item)
+    {
+        tipoAccionSeleccionado = item;
+        tipoAccionNombre = item.Nombre;
+    }
+
+    private void LimpiarTipoAccion()
+    {
+        tipoAccionSeleccionado = null;
+        tipoAccionNombre = string.Empty;
+    }
+
+    private async Task GuardarCambiosAsync(ApplicationDbContext db, string mensajeExito)
+    {
+        try
+        {
+            await db.SaveChangesAsync();
+            NotificationService.Notify(NotificationSeverity.Success, "Guardado", mensajeExito);
+        }
+        catch (DbUpdateException)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "No se pudo guardar", "Revisa si el nombre ya existe o si falta algun dato obligatorio.");
+        }
+    }
+
+    private async Task EliminarEntidadAsync<T>(int? id, string titulo, string mensaje) where T : class
+    {
+        if (!id.HasValue)
+        {
+            return;
+        }
+
+        var confirmacion = await DialogService.Confirm(mensaje, titulo, new ConfirmOptions
+        {
+            OkButtonText = "Eliminar",
+            CancelButtonText = "Cancelar"
+        });
+
+        if (confirmacion != true)
+        {
+            return;
+        }
+
+        await using var db = await DbContextFactory.CreateDbContextAsync();
+        var entidad = await db.Set<T>().FindAsync(id.Value);
+        if (entidad is null)
+        {
+            return;
+        }
+
+        db.Remove(entidad);
+
+        try
+        {
+            await db.SaveChangesAsync();
+            NotificationService.Notify(NotificationSeverity.Success, "Eliminado", "Registro eliminado correctamente.");
+        }
+        catch (DbUpdateException)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "No se pudo eliminar", "Este registro esta siendo usado por otros datos y no se puede borrar.");
+        }
+    }
+
+    private bool ValidarTexto(string? valor, string mensaje)
+    {
+        if (!string.IsNullOrWhiteSpace(valor))
+        {
+            return true;
+        }
+
+        MostrarAviso(mensaje);
+        return false;
+    }
+
+    private void MostrarAviso(string mensaje)
+    {
+        NotificationService.Notify(NotificationSeverity.Warning, "Revision requerida", mensaje);
+    }
+}

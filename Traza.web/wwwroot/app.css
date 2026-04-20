@@ -36,3 +36,15 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+.catalogo-form {
+    background: #f7f9fc;
+    border: 1px solid #e5ebf2;
+    border-radius: 16px;
+    padding: 1rem;
+}
+
+.rz-tabview-panel {
+    padding-left: 0;
+    padding-right: 0;
+}
