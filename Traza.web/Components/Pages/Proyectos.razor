@@ -1,0 +1,153 @@
+@page "/proyectos"
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@using Traza.Web.Components.Dialogs
+@using Traza.Web.Data
+@using Traza.Web.Data.Entidades
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<PageTitle>Gestion de Proyectos | Traza</PageTitle>
+
+@if (cargando)
+{
+    <div class="card card-round">
+        <div class="card-body py-5 text-center">
+            <RadzenProgressBarCircular Mode="ProgressBarMode.Indeterminate" />
+            <div class="mt-3 text-muted">Cargando proyectos...</div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="page-header">
+        <div class="page-header-content">
+            <h4 class="page-title">Gestion de Proyectos</h4>
+            <div class="text-muted">Vista general de proyectos con acceso al detalle y sus tablas hijas.</div>
+        </div>
+        <div class="page-header-actions">
+            <button type="button" class="btn btn-primary btn-round" @onclick="AbrirNuevoAsync">
+                <i class="fi fi-rr-plus me-2"></i>
+                Nuevo proyecto
+            </button>
+        </div>
+    </div>
+
+    <div class="card card-round">
+        <div class="card-body">
+            <RadzenDataGrid Data="@proyectos" TItem="Proyecto" AllowPaging="true" PageSize="10" EmptyText="No hay proyectos registrados.">
+                <Columns>
+                    <RadzenDataGridColumn TItem="Proyecto" Property="Numero" Title="Numero" Width="110px" />
+                    <RadzenDataGridColumn TItem="Proyecto" Property="Nombre" Title="Nombre" />
+                    <RadzenDataGridColumn TItem="Proyecto" Title="Area">
+                        <Template Context="item">@(item.Area?.Nombre ?? "-")</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Proyecto" Title="Prioridad">
+                        <Template Context="item">@item.Prioridad.Nombre</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Proyecto" Title="Estado">
+                        <Template Context="item">@item.Estado.Nombre</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Proyecto" Title="Acciones" Width="150px" TextAlign="TextAlign.Center">
+                        <Template Context="item">
+                            <button type="button" class="btn traza-icon-btn" @onclick="() => AbrirDetalleAsync(item, false)" title="Ver">
+                                <i class="fi fi-rr-eye"></i>
+                            </button>
+                            <button type="button" class="btn traza-icon-btn" @onclick="() => AbrirDetalleAsync(item, true)" title="Editar">
+                                <i class="fi fi-rr-pencil"></i>
+                            </button>
+                            <button type="button" class="btn traza-icon-btn traza-icon-btn-danger" @onclick="() => EliminarAsync(item.Id)" title="Eliminar">
+                                <i class="fi fi-rr-trash"></i>
+                            </button>
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </div>
+    </div>
+}
+
+@code {
+    private bool cargando = true;
+    private List<Proyecto> proyectos = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RecargarAsync();
+        cargando = false;
+    }
+
+    private async Task RecargarAsync()
+    {
+        await using var db = await DbContextFactory.CreateDbContextAsync();
+        proyectos = await db.Proyectos
+            .AsNoTracking()
+            .Include(x => x.Area)
+            .Include(x => x.Estado)
+            .Include(x => x.Prioridad)
+            .OrderByDescending(x => x.FechaAlta)
+            .ToListAsync();
+    }
+
+    private async Task AbrirDetalleAsync(Proyecto proyecto, bool modoEdicion)
+    {
+        await using var db = await DbContextFactory.CreateDbContextAsync();
+        var detalle = await db.Proyectos
+            .AsNoTracking()
+            .Include(x => x.Area)
+            .Include(x => x.Estado)
+            .Include(x => x.Prioridad)
+            .Include(x => x.Coordinador)
+            .Include(x => x.Objetivos)
+            .Include(x => x.Fases).ThenInclude(x => x.Estado)
+            .Include(x => x.Fases).ThenInclude(x => x.Responsable)
+            .Include(x => x.Presupuestos)
+            .Include(x => x.Comentarios).ThenInclude(x => x.Usuario)
+            .FirstAsync(x => x.Id == proyecto.Id);
+
+        await DialogService.OpenAsync<ProyectoDetalleDialog>(
+            modoEdicion ? "Editar proyecto" : "Ver proyecto",
+            new Dictionary<string, object?> { [nameof(ProyectoDetalleDialog.Proyecto)] = detalle },
+            new DialogOptions { Width = "1100px", Height = "760px", CloseDialogOnOverlayClick = true });
+    }
+
+    private async Task EliminarAsync(int id)
+    {
+        var confirmacion = await DialogService.Confirm("El proyecto se eliminara junto con sus datos hijos.", "Eliminar proyecto", new ConfirmOptions
+        {
+            OkButtonText = "Eliminar",
+            CancelButtonText = "Cancelar"
+        });
+
+        if (confirmacion != true)
+        {
+            return;
+        }
+
+        await using var db = await DbContextFactory.CreateDbContextAsync();
+        var entidad = await db.Proyectos.FindAsync(id);
+        if (entidad is null)
+        {
+            return;
+        }
+
+        db.Remove(entidad);
+        try
+        {
+            await db.SaveChangesAsync();
+            NotificationService.Notify(NotificationSeverity.Success, "Eliminado", "Proyecto eliminado correctamente.");
+        }
+        catch (DbUpdateException)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "No se pudo eliminar", "El proyecto tiene relaciones que impiden su borrado.");
+        }
+
+        await RecargarAsync();
+    }
+
+    private void AbrirNuevoAsync()
+    {
+        NotificationService.Notify(NotificationSeverity.Info, "Alta pendiente", "El formulario de nuevo proyecto sera el siguiente paso de esta pantalla.");
+    }
+}

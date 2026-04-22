@@ -1,0 +1,109 @@
+@using Traza.Web.Data.Entidades
+@inject DialogService DialogService
+
+<div class="p-3">
+    <div class="row g-3 detail-summary-grid">
+        <div class="col-md-6">
+            <div class="detail-summary-card">
+                <div class="detail-label">Número</div>
+                <div class="detail-value">@Proyecto.Numero</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="detail-summary-card">
+                <div class="detail-label">Estado</div>
+                <div class="detail-value">@Proyecto.Estado.Nombre</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="detail-summary-card">
+                <div class="detail-label">Área</div>
+                <div class="detail-value">@(Proyecto.Area?.Nombre ?? "-")</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="detail-summary-card">
+                <div class="detail-label">Prioridad</div>
+                <div class="detail-value">@Proyecto.Prioridad.Nombre</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="detail-summary-card">
+                <div class="detail-label">Fecha alta</div>
+                <div class="detail-value">@Proyecto.FechaAlta.ToString("dd/MM/yyyy")</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="detail-summary-card">
+                <div class="detail-label">Coordinador</div>
+                <div class="detail-value">@(Proyecto.Coordinador?.Nombre ?? "-")</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-section mt-4">
+        <div class="detail-label">Nombre del proyecto</div>
+        <div class="detail-value">@Proyecto.Nombre</div>
+    </div>
+
+    <RadzenTabs Class="mt-4">
+        <Tabs>
+            <RadzenTabsItem Text="Objetivos">
+                <RadzenDataGrid Data="@Proyecto.Objetivos" TItem="ObjetivoProyecto" EmptyText="No hay objetivos registrados.">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="ObjetivoProyecto" Property="Orden" Title="Orden" Width="90px" />
+                        <RadzenDataGridColumn TItem="ObjetivoProyecto" Property="Descripcion" Title="Descripción" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenTabsItem>
+            <RadzenTabsItem Text="Fases">
+                <RadzenDataGrid Data="@Proyecto.Fases" TItem="FaseProyecto" EmptyText="No hay fases registradas.">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="FaseProyecto" Property="Nombre" Title="Fase" />
+                        <RadzenDataGridColumn TItem="FaseProyecto" Title="Responsable">
+                            <Template Context="item">@(item.Responsable?.Nombre ?? "-")</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="FaseProyecto" Title="Estado">
+                            <Template Context="item">@item.Estado.Nombre</Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenTabsItem>
+            <RadzenTabsItem Text="Presupuesto">
+                <RadzenDataGrid Data="@Proyecto.Presupuestos" TItem="PresupuestoProyecto" EmptyText="No hay presupuesto registrado.">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="PresupuestoProyecto" Property="FechaEstimacion" Title="Fecha estimación" FormatString="{0:dd/MM/yyyy}" />
+                        <RadzenDataGridColumn TItem="PresupuestoProyecto" Property="ImporteEstimado" Title="Estimado" FormatString="{0:C}" />
+                        <RadzenDataGridColumn TItem="PresupuestoProyecto" Property="ImportePresupuestado" Title="Presupuestado" FormatString="{0:C}" />
+                        <RadzenDataGridColumn TItem="PresupuestoProyecto" Property="ImporteReal" Title="Real" FormatString="{0:C}" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenTabsItem>
+            <RadzenTabsItem Text="Comentarios">
+                <RadzenDataGrid Data="@Proyecto.Comentarios" TItem="ComentarioProyecto" EmptyText="No hay comentarios registrados.">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="ComentarioProyecto" Title="Usuario">
+                            <Template Context="item">@item.Usuario.Nombre</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="ComentarioProyecto" Property="Fecha" Title="Fecha" FormatString="{0:dd/MM/yyyy HH:mm}" />
+                        <RadzenDataGridColumn TItem="ComentarioProyecto" Property="Contenido" Title="Comentario" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+
+    <div class="d-flex justify-content-end mt-4">
+        <RadzenButton Text="Cerrar" ButtonStyle="ButtonStyle.Light" Click="@Cerrar" />
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Proyecto Proyecto { get; set; } = null!;
+
+    private void Cerrar()
+    {
+        DialogService.Close();
+    }
+}

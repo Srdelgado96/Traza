@@ -1,6 +1,8 @@
 @page "/gestion-tablas-maestras"
 @rendermode InteractiveServer
 @using Microsoft.EntityFrameworkCore
+@using Traza.Web.Components.Dialogs
+@using Traza.Web.Components.Models
 @using Traza.Web.Data
 @using Traza.Web.Data.Entidades
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
@@ -20,226 +22,295 @@
 }
 else
 {
-    <div class="row">
-        <div class="col-12">
-            <div class="card card-round">
-                <div class="card-header">
-                    <div class="card-title">Catalogos editables</div>
-                    <div class="card-category">Aqui puedes mantener procesos, tipologias, areas y otras tablas maestras sin tocar codigo.</div>
-                </div>
-                <div class="card-body">
-                    <RadzenTabs>
-                        <Tabs>
-                            <RadzenTabsItem Text="Departamentos">
-                                <div class="row g-4">
-                                    <div class="col-lg-4">
-                                        <div class="catalogo-form">
-                                            <label class="form-label">Nombre</label>
-                                            <RadzenTextBox @bind-Value="departamentoNombre" Name="DepartamentoNombre" Style="width:100%;" />
-                                            <div class="mt-3 d-flex gap-2">
-                                                <RadzenButton Text="Nuevo" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@LimpiarDepartamento" />
-                                                <RadzenButton Text="Guardar" Icon="save" Click="@GuardarDepartamentoAsync" />
-                                                <RadzenButton Text="Eliminar" Icon="delete" ButtonStyle="ButtonStyle.Danger" Disabled="@(departamentoSeleccionado is null)" Click="@EliminarDepartamentoAsync" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-8">
-                                        <RadzenDataGrid Data="@departamentos" TItem="Departamento" RowSelect="@SeleccionarDepartamento" AllowPaging="true" PageSize="8">
-                                            <Columns>
-                                                <RadzenDataGridColumn TItem="Departamento" Property="Id" Title="Id" Width="90px" />
-                                                <RadzenDataGridColumn TItem="Departamento" Property="Nombre" Title="Nombre" />
-                                            </Columns>
-                                        </RadzenDataGrid>
-                                    </div>
-                                </div>
-                            </RadzenTabsItem>
+    <div class="page-header">
+        <div>
+            <h4 class="page-title">Gestion de tablas maestras</h4>
+            <div class="text-muted">Alta con dialogo, edicion en linea y acciones directas por registro.</div>
+        </div>
+    </div>
 
-                            <RadzenTabsItem Text="Procesos">
-                                <div class="row g-4">
-                                    <div class="col-lg-4">
-                                        <div class="catalogo-form">
-                                            <label class="form-label">Nombre</label>
-                                            <RadzenTextBox @bind-Value="procesoNombre" Name="ProcesoNombre" Style="width:100%;" />
-                                            <div class="mt-3 d-flex gap-2">
-                                                <RadzenButton Text="Nuevo" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@LimpiarProceso" />
-                                                <RadzenButton Text="Guardar" Icon="save" Click="@GuardarProcesoAsync" />
-                                                <RadzenButton Text="Eliminar" Icon="delete" ButtonStyle="ButtonStyle.Danger" Disabled="@(procesoSeleccionado is null)" Click="@EliminarProcesoAsync" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-8">
-                                        <RadzenDataGrid Data="@procesos" TItem="Proceso" RowSelect="@SeleccionarProceso" AllowPaging="true" PageSize="8">
-                                            <Columns>
-                                                <RadzenDataGridColumn TItem="Proceso" Property="Id" Title="Id" Width="90px" />
-                                                <RadzenDataGridColumn TItem="Proceso" Property="Nombre" Title="Nombre" />
-                                            </Columns>
-                                        </RadzenDataGrid>
-                                    </div>
-                                </div>
-                            </RadzenTabsItem>
+    <div class="card card-round">
+        <div class="card-body">
+            <div class="traza-master-tabs">
+            <RadzenTabs>
+                <Tabs>
+                    <RadzenTabsItem Text="Departamentos">
+                        @RenderHeader("Departamentos", AbrirNuevoDepartamentoAsync)
+                        <RadzenDataGrid @ref="gridDepartamentos" Data="@departamentos" TItem="Departamento" EditMode="DataGridEditMode.Single" AllowPaging="true" PageSize="8" EmptyText="No hay departamentos.">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="Departamento" Property="Nombre" Title="Nombre">
+                                    <EditTemplate Context="item">
+                                        <RadzenTextBox @bind-Value="item.Nombre" Style="width:100%;" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                @RenderActionsColumn(gridDepartamentos, "acciones", (Departamento item) => EditarFilaAsync(gridDepartamentos, item), (Departamento item) => GuardarFilaAsync(gridDepartamentos, item), (Departamento item) => CancelarEdicionAsync(gridDepartamentos, item), (Departamento item) => EliminarEntidadAsync<Departamento>(item.Id, "Eliminar departamento", "Este departamento se eliminara si no esta en uso."))
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenTabsItem>
 
-                            <RadzenTabsItem Text="Tipologias">
-                                <div class="row g-4">
-                                    <div class="col-lg-4">
-                                        <div class="catalogo-form">
-                                            <label class="form-label">Proceso</label>
-                                            <RadzenDropDown Data="@procesos"
-                                                            TextProperty="Nombre"
-                                                            ValueProperty="Id"
-                                                            @bind-Value="tipologiaProcesoId"
-                                                            Style="width:100%;" />
-                                            <label class="form-label mt-3">Nombre</label>
-                                            <RadzenTextBox @bind-Value="tipologiaNombre" Name="TipologiaNombre" Style="width:100%;" />
-                                            <div class="form-check mt-3">
-                                                <input class="form-check-input" type="checkbox" id="tipologiaActiva" @bind="tipologiaActiva" />
-                                                <label class="form-check-label" for="tipologiaActiva">Activa</label>
-                                            </div>
-                                            <div class="mt-3 d-flex gap-2">
-                                                <RadzenButton Text="Nuevo" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@LimpiarTipologia" />
-                                                <RadzenButton Text="Guardar" Icon="save" Click="@GuardarTipologiaAsync" />
-                                                <RadzenButton Text="Eliminar" Icon="delete" ButtonStyle="ButtonStyle.Danger" Disabled="@(tipologiaSeleccionada is null)" Click="@EliminarTipologiaAsync" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-8">
-                                        <RadzenDataGrid Data="@tipologias" TItem="TipologiaIncidencia" RowSelect="@SeleccionarTipologia" AllowPaging="true" PageSize="10">
-                                            <Columns>
-                                                <RadzenDataGridColumn TItem="TipologiaIncidencia" Property="Id" Title="Id" Width="80px" />
-                                                <RadzenDataGridColumn TItem="TipologiaIncidencia" Title="Proceso">
-                                                    <Template Context="item">@item.Proceso.Nombre</Template>
-                                                </RadzenDataGridColumn>
-                                                <RadzenDataGridColumn TItem="TipologiaIncidencia" Property="Nombre" Title="Nombre" />
-                                                <RadzenDataGridColumn TItem="TipologiaIncidencia" Title="Activa" Width="110px">
-                                                    <Template Context="item">@(item.Activa ? "Si" : "No")</Template>
-                                                </RadzenDataGridColumn>
-                                            </Columns>
-                                        </RadzenDataGrid>
-                                    </div>
-                                </div>
-                            </RadzenTabsItem>
+                    <RadzenTabsItem Text="Procesos">
+                        @RenderHeader("Procesos", AbrirNuevoProcesoAsync)
+                        <RadzenDataGrid @ref="gridProcesos" Data="@procesos" TItem="Proceso" EditMode="DataGridEditMode.Single" AllowPaging="true" PageSize="8" EmptyText="No hay procesos.">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="Proceso" Property="Nombre" Title="Nombre">
+                                    <EditTemplate Context="item">
+                                        <RadzenTextBox @bind-Value="item.Nombre" Style="width:100%;" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                @RenderActionsColumn(gridProcesos, "acciones", (Proceso item) => EditarFilaAsync(gridProcesos, item), (Proceso item) => GuardarFilaAsync(gridProcesos, item), (Proceso item) => CancelarEdicionAsync(gridProcesos, item), (Proceso item) => EliminarEntidadAsync<Proceso>(item.Id, "Eliminar proceso", "Este proceso se eliminara si no esta relacionado con otros registros."))
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenTabsItem>
 
-                            <RadzenTabsItem Text="Areas de proyecto">
-                                <div class="row g-4">
-                                    <div class="col-lg-4">
-                                        <div class="catalogo-form">
-                                            <label class="form-label">Nombre</label>
-                                            <RadzenTextBox @bind-Value="areaProyectoNombre" Name="AreaProyectoNombre" Style="width:100%;" />
-                                            <div class="mt-3 d-flex gap-2">
-                                                <RadzenButton Text="Nuevo" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@LimpiarAreaProyecto" />
-                                                <RadzenButton Text="Guardar" Icon="save" Click="@GuardarAreaProyectoAsync" />
-                                                <RadzenButton Text="Eliminar" Icon="delete" ButtonStyle="ButtonStyle.Danger" Disabled="@(areaProyectoSeleccionada is null)" Click="@EliminarAreaProyectoAsync" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-8">
-                                        <RadzenDataGrid Data="@areasProyecto" TItem="AreaProyecto" RowSelect="@SeleccionarAreaProyecto" AllowPaging="true" PageSize="8">
-                                            <Columns>
-                                                <RadzenDataGridColumn TItem="AreaProyecto" Property="Id" Title="Id" Width="90px" />
-                                                <RadzenDataGridColumn TItem="AreaProyecto" Property="Nombre" Title="Nombre" />
-                                            </Columns>
-                                        </RadzenDataGrid>
-                                    </div>
-                                </div>
-                            </RadzenTabsItem>
+                    <RadzenTabsItem Text="Tipologias">
+                        @RenderHeader("Tipologias", AbrirNuevaTipologiaAsync)
+                        <RadzenDataGrid @ref="gridTipologias" Data="@tipologias" TItem="TipologiaIncidencia" EditMode="DataGridEditMode.Single" AllowPaging="true" PageSize="10" EmptyText="No hay tipologias.">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="TipologiaIncidencia" Title="Proceso">
+                                    <Template Context="item">@item.Proceso.Nombre</Template>
+                                    <EditTemplate Context="item">
+                                        <RadzenDropDown Data="@procesos" TextProperty="Nombre" ValueProperty="Id" @bind-Value="item.ProcesoId" Style="width:100%;" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="TipologiaIncidencia" Property="Nombre" Title="Nombre">
+                                    <EditTemplate Context="item">
+                                        <RadzenTextBox @bind-Value="item.Nombre" Style="width:100%;" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="TipologiaIncidencia" Title="Activa" Width="120px">
+                                    <Template Context="item">@(item.Activa ? "Si" : "No")</Template>
+                                    <EditTemplate Context="item">
+                                        <RadzenCheckBox @bind-Value="item.Activa" TValue="bool" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                @RenderActionsColumn(gridTipologias, "acciones", (TipologiaIncidencia item) => EditarFilaAsync(gridTipologias, item), (TipologiaIncidencia item) => GuardarFilaAsync(gridTipologias, item), (TipologiaIncidencia item) => CancelarEdicionAsync(gridTipologias, item), (TipologiaIncidencia item) => EliminarEntidadAsync<TipologiaIncidencia>(item.Id, "Eliminar tipologia", "La tipologia se eliminara si no esta usada por incidencias."))
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenTabsItem>
 
-                            <RadzenTabsItem Text="Tipos documento">
-                                <div class="row g-4">
-                                    <div class="col-lg-4">
-                                        <div class="catalogo-form">
-                                            <label class="form-label">Nombre</label>
-                                            <RadzenTextBox @bind-Value="tipoDocumentoNombre" Name="TipoDocumentoNombre" Style="width:100%;" />
-                                            <div class="mt-3 d-flex gap-2">
-                                                <RadzenButton Text="Nuevo" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@LimpiarTipoDocumento" />
-                                                <RadzenButton Text="Guardar" Icon="save" Click="@GuardarTipoDocumentoAsync" />
-                                                <RadzenButton Text="Eliminar" Icon="delete" ButtonStyle="ButtonStyle.Danger" Disabled="@(tipoDocumentoSeleccionado is null)" Click="@EliminarTipoDocumentoAsync" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-8">
-                                        <RadzenDataGrid Data="@tiposDocumento" TItem="TipoDocumentoReferencia" RowSelect="@SeleccionarTipoDocumento" AllowPaging="true" PageSize="8">
-                                            <Columns>
-                                                <RadzenDataGridColumn TItem="TipoDocumentoReferencia" Property="Id" Title="Id" Width="90px" />
-                                                <RadzenDataGridColumn TItem="TipoDocumentoReferencia" Property="Nombre" Title="Nombre" />
-                                            </Columns>
-                                        </RadzenDataGrid>
-                                    </div>
-                                </div>
-                            </RadzenTabsItem>
+                    <RadzenTabsItem Text="Estados incidencia">
+                        @RenderHeader("Estados de incidencia", AbrirNuevoEstadoIncidenciaAsync)
+                        <RadzenDataGrid @ref="gridEstadosIncidencia" Data="@estadosIncidencia" TItem="EstadoIncidencia" EditMode="DataGridEditMode.Single" AllowPaging="true" PageSize="8" EmptyText="No hay estados.">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="EstadoIncidencia" Property="Nombre" Title="Nombre">
+                                    <EditTemplate Context="item">
+                                        <RadzenTextBox @bind-Value="item.Nombre" Style="width:100%;" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="EstadoIncidencia" Property="Orden" Title="Orden" Width="120px">
+                                    <EditTemplate Context="item">
+                                        <RadzenNumeric @bind-Value="item.Orden" Min="1" Style="width:100%;" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="EstadoIncidencia" Title="Es cierre" Width="130px">
+                                    <Template Context="item">@(item.EsCierre ? "Si" : "No")</Template>
+                                    <EditTemplate Context="item">
+                                        <RadzenCheckBox @bind-Value="item.EsCierre" TValue="bool" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                @RenderActionsColumn(gridEstadosIncidencia, "acciones", (EstadoIncidencia item) => EditarFilaAsync(gridEstadosIncidencia, item), (EstadoIncidencia item) => GuardarFilaAsync(gridEstadosIncidencia, item), (EstadoIncidencia item) => CancelarEdicionAsync(gridEstadosIncidencia, item), (EstadoIncidencia item) => EliminarEntidadAsync<EstadoIncidencia>(item.Id, "Eliminar estado", "El estado se eliminara si no esta en uso."))
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenTabsItem>
 
-                            <RadzenTabsItem Text="Tipos adjunto">
-                                <div class="row g-4">
-                                    <div class="col-lg-4">
-                                        <div class="catalogo-form">
-                                            <label class="form-label">Nombre</label>
-                                            <RadzenTextBox @bind-Value="tipoAdjuntoNombre" Name="TipoAdjuntoNombre" Style="width:100%;" />
-                                            <div class="mt-3 d-flex gap-2">
-                                                <RadzenButton Text="Nuevo" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@LimpiarTipoAdjunto" />
-                                                <RadzenButton Text="Guardar" Icon="save" Click="@GuardarTipoAdjuntoAsync" />
-                                                <RadzenButton Text="Eliminar" Icon="delete" ButtonStyle="ButtonStyle.Danger" Disabled="@(tipoAdjuntoSeleccionado is null)" Click="@EliminarTipoAdjuntoAsync" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-8">
-                                        <RadzenDataGrid Data="@tiposAdjunto" TItem="TipoAdjunto" RowSelect="@SeleccionarTipoAdjunto" AllowPaging="true" PageSize="8">
-                                            <Columns>
-                                                <RadzenDataGridColumn TItem="TipoAdjunto" Property="Id" Title="Id" Width="90px" />
-                                                <RadzenDataGridColumn TItem="TipoAdjunto" Property="Nombre" Title="Nombre" />
-                                            </Columns>
-                                        </RadzenDataGrid>
-                                    </div>
-                                </div>
-                            </RadzenTabsItem>
+                    <RadzenTabsItem Text="Estados detalle">
+                        @RenderHeader("Estados de detalle", AbrirNuevoEstadoDetalleAsync)
+                        <RadzenDataGrid @ref="gridEstadosDetalle" Data="@estadosDetalleIncidencia" TItem="EstadoDetalleIncidencia" EditMode="DataGridEditMode.Single" AllowPaging="true" PageSize="8" EmptyText="No hay estados.">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="EstadoDetalleIncidencia" Property="Nombre" Title="Nombre">
+                                    <EditTemplate Context="item">
+                                        <RadzenTextBox @bind-Value="item.Nombre" Style="width:100%;" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="EstadoDetalleIncidencia" Property="Orden" Title="Orden" Width="120px">
+                                    <EditTemplate Context="item">
+                                        <RadzenNumeric @bind-Value="item.Orden" Min="1" Style="width:100%;" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                @RenderActionsColumn(gridEstadosDetalle, "acciones", (EstadoDetalleIncidencia item) => EditarFilaAsync(gridEstadosDetalle, item), (EstadoDetalleIncidencia item) => GuardarFilaAsync(gridEstadosDetalle, item), (EstadoDetalleIncidencia item) => CancelarEdicionAsync(gridEstadosDetalle, item), (EstadoDetalleIncidencia item) => EliminarEntidadAsync<EstadoDetalleIncidencia>(item.Id, "Eliminar estado", "El estado se eliminara si no esta en uso."))
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenTabsItem>
 
-                            <RadzenTabsItem Text="Origenes mejora">
-                                <div class="row g-4">
-                                    <div class="col-lg-4">
-                                        <div class="catalogo-form">
-                                            <label class="form-label">Nombre</label>
-                                            <RadzenTextBox @bind-Value="origenAccionNombre" Name="OrigenAccionNombre" Style="width:100%;" />
-                                            <div class="mt-3 d-flex gap-2">
-                                                <RadzenButton Text="Nuevo" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@LimpiarOrigenAccion" />
-                                                <RadzenButton Text="Guardar" Icon="save" Click="@GuardarOrigenAccionAsync" />
-                                                <RadzenButton Text="Eliminar" Icon="delete" ButtonStyle="ButtonStyle.Danger" Disabled="@(origenAccionSeleccionado is null)" Click="@EliminarOrigenAccionAsync" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-8">
-                                        <RadzenDataGrid Data="@origenesAccion" TItem="OrigenAccionMejora" RowSelect="@SeleccionarOrigenAccion" AllowPaging="true" PageSize="8">
-                                            <Columns>
-                                                <RadzenDataGridColumn TItem="OrigenAccionMejora" Property="Id" Title="Id" Width="90px" />
-                                                <RadzenDataGridColumn TItem="OrigenAccionMejora" Property="Nombre" Title="Nombre" />
-                                            </Columns>
-                                        </RadzenDataGrid>
-                                    </div>
-                                </div>
-                            </RadzenTabsItem>
+                    <RadzenTabsItem Text="Tipos documento">
+                        @RenderHeader("Tipos de documento", AbrirNuevoTipoDocumentoAsync)
+                        <RadzenDataGrid @ref="gridTiposDocumento" Data="@tiposDocumento" TItem="TipoDocumentoReferencia" EditMode="DataGridEditMode.Single" AllowPaging="true" PageSize="8" EmptyText="No hay tipos de documento.">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="TipoDocumentoReferencia" Property="Nombre" Title="Nombre">
+                                    <EditTemplate Context="item">
+                                        <RadzenTextBox @bind-Value="item.Nombre" Style="width:100%;" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                @RenderActionsColumn(gridTiposDocumento, "acciones", (TipoDocumentoReferencia item) => EditarFilaAsync(gridTiposDocumento, item), (TipoDocumentoReferencia item) => GuardarFilaAsync(gridTiposDocumento, item), (TipoDocumentoReferencia item) => CancelarEdicionAsync(gridTiposDocumento, item), (TipoDocumentoReferencia item) => EliminarEntidadAsync<TipoDocumentoReferencia>(item.Id, "Eliminar tipo de documento", "Se eliminara si no esta en uso."))
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenTabsItem>
 
-                            <RadzenTabsItem Text="Tipos accion">
-                                <div class="row g-4">
-                                    <div class="col-lg-4">
-                                        <div class="catalogo-form">
-                                            <label class="form-label">Nombre</label>
-                                            <RadzenTextBox @bind-Value="tipoAccionNombre" Name="TipoAccionNombre" Style="width:100%;" />
-                                            <div class="mt-3 d-flex gap-2">
-                                                <RadzenButton Text="Nuevo" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@LimpiarTipoAccion" />
-                                                <RadzenButton Text="Guardar" Icon="save" Click="@GuardarTipoAccionAsync" />
-                                                <RadzenButton Text="Eliminar" Icon="delete" ButtonStyle="ButtonStyle.Danger" Disabled="@(tipoAccionSeleccionado is null)" Click="@EliminarTipoAccionAsync" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-8">
-                                        <RadzenDataGrid Data="@tiposAccion" TItem="TipoAccionMejora" RowSelect="@SeleccionarTipoAccion" AllowPaging="true" PageSize="8">
-                                            <Columns>
-                                                <RadzenDataGridColumn TItem="TipoAccionMejora" Property="Id" Title="Id" Width="90px" />
-                                                <RadzenDataGridColumn TItem="TipoAccionMejora" Property="Nombre" Title="Nombre" />
-                                            </Columns>
-                                        </RadzenDataGrid>
-                                    </div>
-                                </div>
-                            </RadzenTabsItem>
-                        </Tabs>
-                    </RadzenTabs>
-                </div>
+                    <RadzenTabsItem Text="Tipos adjunto">
+                        @RenderHeader("Tipos de adjunto", AbrirNuevoTipoAdjuntoAsync)
+                        <RadzenDataGrid @ref="gridTiposAdjunto" Data="@tiposAdjunto" TItem="TipoAdjunto" EditMode="DataGridEditMode.Single" AllowPaging="true" PageSize="8" EmptyText="No hay tipos de adjunto.">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="TipoAdjunto" Property="Nombre" Title="Nombre">
+                                    <EditTemplate Context="item">
+                                        <RadzenTextBox @bind-Value="item.Nombre" Style="width:100%;" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                @RenderActionsColumn(gridTiposAdjunto, "acciones", (TipoAdjunto item) => EditarFilaAsync(gridTiposAdjunto, item), (TipoAdjunto item) => GuardarFilaAsync(gridTiposAdjunto, item), (TipoAdjunto item) => CancelarEdicionAsync(gridTiposAdjunto, item), (TipoAdjunto item) => EliminarEntidadAsync<TipoAdjunto>(item.Id, "Eliminar tipo de adjunto", "Se eliminara si no esta en uso."))
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenTabsItem>
+
+                    <RadzenTabsItem Text="Tipos coste">
+                        @RenderHeader("Tipos de coste no calidad", AbrirNuevoTipoCosteAsync)
+                        <RadzenDataGrid @ref="gridTiposCoste" Data="@tiposCosteNoCalidad" TItem="TipoCosteNoCalidad" EditMode="DataGridEditMode.Single" AllowPaging="true" PageSize="8" EmptyText="No hay tipos de coste.">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="TipoCosteNoCalidad" Property="Nombre" Title="Nombre">
+                                    <EditTemplate Context="item">
+                                        <RadzenTextBox @bind-Value="item.Nombre" Style="width:100%;" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                @RenderActionsColumn(gridTiposCoste, "acciones", (TipoCosteNoCalidad item) => EditarFilaAsync(gridTiposCoste, item), (TipoCosteNoCalidad item) => GuardarFilaAsync(gridTiposCoste, item), (TipoCosteNoCalidad item) => CancelarEdicionAsync(gridTiposCoste, item), (TipoCosteNoCalidad item) => EliminarEntidadAsync<TipoCosteNoCalidad>(item.Id, "Eliminar tipo de coste", "Se eliminara si no esta en uso."))
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenTabsItem>
+
+                    <RadzenTabsItem Text="Origenes mejora">
+                        @RenderHeader("Origenes de mejora", AbrirNuevoOrigenAccionAsync)
+                        <RadzenDataGrid @ref="gridOrigenesAccion" Data="@origenesAccion" TItem="OrigenAccionMejora" EditMode="DataGridEditMode.Single" AllowPaging="true" PageSize="8" EmptyText="No hay origenes.">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="OrigenAccionMejora" Property="Nombre" Title="Nombre">
+                                    <EditTemplate Context="item">
+                                        <RadzenTextBox @bind-Value="item.Nombre" Style="width:100%;" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                @RenderActionsColumn(gridOrigenesAccion, "acciones", (OrigenAccionMejora item) => EditarFilaAsync(gridOrigenesAccion, item), (OrigenAccionMejora item) => GuardarFilaAsync(gridOrigenesAccion, item), (OrigenAccionMejora item) => CancelarEdicionAsync(gridOrigenesAccion, item), (OrigenAccionMejora item) => EliminarEntidadAsync<OrigenAccionMejora>(item.Id, "Eliminar origen", "Se eliminara si no esta en uso."))
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenTabsItem>
+
+                    <RadzenTabsItem Text="Tipos accion">
+                        @RenderHeader("Tipos de accion", AbrirNuevoTipoAccionAsync)
+                        <RadzenDataGrid @ref="gridTiposAccion" Data="@tiposAccion" TItem="TipoAccionMejora" EditMode="DataGridEditMode.Single" AllowPaging="true" PageSize="8" EmptyText="No hay tipos de accion.">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="TipoAccionMejora" Property="Nombre" Title="Nombre">
+                                    <EditTemplate Context="item">
+                                        <RadzenTextBox @bind-Value="item.Nombre" Style="width:100%;" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                @RenderActionsColumn(gridTiposAccion, "acciones", (TipoAccionMejora item) => EditarFilaAsync(gridTiposAccion, item), (TipoAccionMejora item) => GuardarFilaAsync(gridTiposAccion, item), (TipoAccionMejora item) => CancelarEdicionAsync(gridTiposAccion, item), (TipoAccionMejora item) => EliminarEntidadAsync<TipoAccionMejora>(item.Id, "Eliminar tipo de accion", "Se eliminara si no esta en uso."))
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenTabsItem>
+
+                    <RadzenTabsItem Text="Estados accion">
+                        @RenderHeader("Estados de accion", AbrirNuevoEstadoAccionAsync)
+                        <RadzenDataGrid @ref="gridEstadosAccion" Data="@estadosAccionMejora" TItem="EstadoAccionMejora" EditMode="DataGridEditMode.Single" AllowPaging="true" PageSize="8" EmptyText="No hay estados.">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="EstadoAccionMejora" Property="Nombre" Title="Nombre">
+                                    <EditTemplate Context="item">
+                                        <RadzenTextBox @bind-Value="item.Nombre" Style="width:100%;" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="EstadoAccionMejora" Property="Orden" Title="Orden" Width="120px">
+                                    <EditTemplate Context="item">
+                                        <RadzenNumeric @bind-Value="item.Orden" Min="1" Style="width:100%;" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="EstadoAccionMejora" Title="Es cierre" Width="130px">
+                                    <Template Context="item">@(item.EsCierre ? "Si" : "No")</Template>
+                                    <EditTemplate Context="item">
+                                        <RadzenCheckBox @bind-Value="item.EsCierre" TValue="bool" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                @RenderActionsColumn(gridEstadosAccion, "acciones", (EstadoAccionMejora item) => EditarFilaAsync(gridEstadosAccion, item), (EstadoAccionMejora item) => GuardarFilaAsync(gridEstadosAccion, item), (EstadoAccionMejora item) => CancelarEdicionAsync(gridEstadosAccion, item), (EstadoAccionMejora item) => EliminarEntidadAsync<EstadoAccionMejora>(item.Id, "Eliminar estado", "El estado se eliminara si no esta en uso."))
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenTabsItem>
+
+                    <RadzenTabsItem Text="Areas proyecto">
+                        @RenderHeader("Areas de proyecto", AbrirNuevaAreaProyectoAsync)
+                        <RadzenDataGrid @ref="gridAreasProyecto" Data="@areasProyecto" TItem="AreaProyecto" EditMode="DataGridEditMode.Single" AllowPaging="true" PageSize="8" EmptyText="No hay areas de proyecto.">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="AreaProyecto" Property="Nombre" Title="Nombre">
+                                    <EditTemplate Context="item">
+                                        <RadzenTextBox @bind-Value="item.Nombre" Style="width:100%;" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                @RenderActionsColumn(gridAreasProyecto, "acciones", (AreaProyecto item) => EditarFilaAsync(gridAreasProyecto, item), (AreaProyecto item) => GuardarFilaAsync(gridAreasProyecto, item), (AreaProyecto item) => CancelarEdicionAsync(gridAreasProyecto, item), (AreaProyecto item) => EliminarEntidadAsync<AreaProyecto>(item.Id, "Eliminar area", "El area se eliminara si no esta relacionada con proyectos."))
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenTabsItem>
+
+                    <RadzenTabsItem Text="Estados proyecto">
+                        @RenderHeader("Estados de proyecto", AbrirNuevoEstadoProyectoAsync)
+                        <RadzenDataGrid @ref="gridEstadosProyecto" Data="@estadosProyecto" TItem="EstadoProyecto" EditMode="DataGridEditMode.Single" AllowPaging="true" PageSize="8" EmptyText="No hay estados.">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="EstadoProyecto" Property="Nombre" Title="Nombre">
+                                    <EditTemplate Context="item">
+                                        <RadzenTextBox @bind-Value="item.Nombre" Style="width:100%;" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="EstadoProyecto" Property="Orden" Title="Orden" Width="120px">
+                                    <EditTemplate Context="item">
+                                        <RadzenNumeric @bind-Value="item.Orden" Min="1" Style="width:100%;" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="EstadoProyecto" Title="Es cierre" Width="130px">
+                                    <Template Context="item">@(item.EsCierre ? "Si" : "No")</Template>
+                                    <EditTemplate Context="item">
+                                        <RadzenCheckBox @bind-Value="item.EsCierre" TValue="bool" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                @RenderActionsColumn(gridEstadosProyecto, "acciones", (EstadoProyecto item) => EditarFilaAsync(gridEstadosProyecto, item), (EstadoProyecto item) => GuardarFilaAsync(gridEstadosProyecto, item), (EstadoProyecto item) => CancelarEdicionAsync(gridEstadosProyecto, item), (EstadoProyecto item) => EliminarEntidadAsync<EstadoProyecto>(item.Id, "Eliminar estado", "El estado se eliminara si no esta en uso."))
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenTabsItem>
+
+                    <RadzenTabsItem Text="Prioridades">
+                        @RenderHeader("Prioridades de proyecto", AbrirNuevaPrioridadProyectoAsync)
+                        <RadzenDataGrid @ref="gridPrioridadesProyecto" Data="@prioridadesProyecto" TItem="PrioridadProyecto" EditMode="DataGridEditMode.Single" AllowPaging="true" PageSize="8" EmptyText="No hay prioridades.">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="PrioridadProyecto" Property="Nombre" Title="Nombre">
+                                    <EditTemplate Context="item">
+                                        <RadzenTextBox @bind-Value="item.Nombre" Style="width:100%;" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="PrioridadProyecto" Property="Orden" Title="Orden" Width="120px">
+                                    <EditTemplate Context="item">
+                                        <RadzenNumeric @bind-Value="item.Orden" Min="1" Style="width:100%;" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                @RenderActionsColumn(gridPrioridadesProyecto, "acciones", (PrioridadProyecto item) => EditarFilaAsync(gridPrioridadesProyecto, item), (PrioridadProyecto item) => GuardarFilaAsync(gridPrioridadesProyecto, item), (PrioridadProyecto item) => CancelarEdicionAsync(gridPrioridadesProyecto, item), (PrioridadProyecto item) => EliminarEntidadAsync<PrioridadProyecto>(item.Id, "Eliminar prioridad", "La prioridad se eliminara si no esta en uso."))
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenTabsItem>
+
+                    <RadzenTabsItem Text="Estados fase">
+                        @RenderHeader("Estados de fase", AbrirNuevoEstadoFaseAsync)
+                        <RadzenDataGrid @ref="gridEstadosFase" Data="@estadosFaseProyecto" TItem="EstadoFaseProyecto" EditMode="DataGridEditMode.Single" AllowPaging="true" PageSize="8" EmptyText="No hay estados.">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="EstadoFaseProyecto" Property="Nombre" Title="Nombre">
+                                    <EditTemplate Context="item">
+                                        <RadzenTextBox @bind-Value="item.Nombre" Style="width:100%;" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="EstadoFaseProyecto" Property="Orden" Title="Orden" Width="120px">
+                                    <EditTemplate Context="item">
+                                        <RadzenNumeric @bind-Value="item.Orden" Min="1" Style="width:100%;" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="EstadoFaseProyecto" Title="Es cierre" Width="130px">
+                                    <Template Context="item">@(item.EsCierre ? "Si" : "No")</Template>
+                                    <EditTemplate Context="item">
+                                        <RadzenCheckBox @bind-Value="item.EsCierre" TValue="bool" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                @RenderActionsColumn(gridEstadosFase, "acciones", (EstadoFaseProyecto item) => EditarFilaAsync(gridEstadosFase, item), (EstadoFaseProyecto item) => GuardarFilaAsync(gridEstadosFase, item), (EstadoFaseProyecto item) => CancelarEdicionAsync(gridEstadosFase, item), (EstadoFaseProyecto item) => EliminarEntidadAsync<EstadoFaseProyecto>(item.Id, "Eliminar estado", "El estado se eliminara si no esta en uso."))
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenTabsItem>
+                </Tabs>
+            </RadzenTabs>
             </div>
         </div>
     </div>
@@ -248,44 +319,41 @@ else
 @code {
     private bool cargando = true;
 
+    private RadzenDataGrid<Departamento>? gridDepartamentos;
+    private RadzenDataGrid<Proceso>? gridProcesos;
+    private RadzenDataGrid<TipologiaIncidencia>? gridTipologias;
+    private RadzenDataGrid<EstadoIncidencia>? gridEstadosIncidencia;
+    private RadzenDataGrid<EstadoDetalleIncidencia>? gridEstadosDetalle;
+    private RadzenDataGrid<TipoDocumentoReferencia>? gridTiposDocumento;
+    private RadzenDataGrid<TipoAdjunto>? gridTiposAdjunto;
+    private RadzenDataGrid<TipoCosteNoCalidad>? gridTiposCoste;
+    private RadzenDataGrid<OrigenAccionMejora>? gridOrigenesAccion;
+    private RadzenDataGrid<TipoAccionMejora>? gridTiposAccion;
+    private RadzenDataGrid<EstadoAccionMejora>? gridEstadosAccion;
+    private RadzenDataGrid<AreaProyecto>? gridAreasProyecto;
+    private RadzenDataGrid<EstadoProyecto>? gridEstadosProyecto;
+    private RadzenDataGrid<PrioridadProyecto>? gridPrioridadesProyecto;
+    private RadzenDataGrid<EstadoFaseProyecto>? gridEstadosFase;
+
     private List<Departamento> departamentos = [];
-    private Departamento? departamentoSeleccionado;
-    private string departamentoNombre = string.Empty;
-
     private List<Proceso> procesos = [];
-    private Proceso? procesoSeleccionado;
-    private string procesoNombre = string.Empty;
-
     private List<TipologiaIncidencia> tipologias = [];
-    private TipologiaIncidencia? tipologiaSeleccionada;
-    private int? tipologiaProcesoId;
-    private string tipologiaNombre = string.Empty;
-    private bool tipologiaActiva = true;
-
-    private List<AreaProyecto> areasProyecto = [];
-    private AreaProyecto? areaProyectoSeleccionada;
-    private string areaProyectoNombre = string.Empty;
-
+    private List<EstadoIncidencia> estadosIncidencia = [];
+    private List<EstadoDetalleIncidencia> estadosDetalleIncidencia = [];
     private List<TipoDocumentoReferencia> tiposDocumento = [];
-    private TipoDocumentoReferencia? tipoDocumentoSeleccionado;
-    private string tipoDocumentoNombre = string.Empty;
-
     private List<TipoAdjunto> tiposAdjunto = [];
-    private TipoAdjunto? tipoAdjuntoSeleccionado;
-    private string tipoAdjuntoNombre = string.Empty;
-
+    private List<TipoCosteNoCalidad> tiposCosteNoCalidad = [];
     private List<OrigenAccionMejora> origenesAccion = [];
-    private OrigenAccionMejora? origenAccionSeleccionado;
-    private string origenAccionNombre = string.Empty;
-
     private List<TipoAccionMejora> tiposAccion = [];
-    private TipoAccionMejora? tipoAccionSeleccionado;
-    private string tipoAccionNombre = string.Empty;
+    private List<EstadoAccionMejora> estadosAccionMejora = [];
+    private List<AreaProyecto> areasProyecto = [];
+    private List<EstadoProyecto> estadosProyecto = [];
+    private List<PrioridadProyecto> prioridadesProyecto = [];
+    private List<EstadoFaseProyecto> estadosFaseProyecto = [];
 
     protected override async Task OnInitializedAsync()
     {
         await RecargarTodoAsync();
-        tipologiaProcesoId ??= procesos.FirstOrDefault()?.Id;
         cargando = false;
     }
 
@@ -296,348 +364,181 @@ else
         departamentos = await db.Departamentos.AsNoTracking().OrderBy(x => x.Nombre).ToListAsync();
         procesos = await db.Procesos.AsNoTracking().OrderBy(x => x.Nombre).ToListAsync();
         tipologias = await db.TipologiasIncidencia.AsNoTracking().Include(x => x.Proceso).OrderBy(x => x.Proceso.Nombre).ThenBy(x => x.Nombre).ToListAsync();
-        areasProyecto = await db.AreasProyecto.AsNoTracking().OrderBy(x => x.Nombre).ToListAsync();
+        estadosIncidencia = await db.EstadosIncidencia.AsNoTracking().OrderBy(x => x.Orden).ThenBy(x => x.Nombre).ToListAsync();
+        estadosDetalleIncidencia = await db.EstadosDetalleIncidencia.AsNoTracking().OrderBy(x => x.Orden).ThenBy(x => x.Nombre).ToListAsync();
         tiposDocumento = await db.TiposDocumentoReferencia.AsNoTracking().OrderBy(x => x.Nombre).ToListAsync();
         tiposAdjunto = await db.TiposAdjunto.AsNoTracking().OrderBy(x => x.Nombre).ToListAsync();
+        tiposCosteNoCalidad = await db.TiposCosteNoCalidad.AsNoTracking().OrderBy(x => x.Nombre).ToListAsync();
         origenesAccion = await db.OrigenesAccionMejora.AsNoTracking().OrderBy(x => x.Nombre).ToListAsync();
         tiposAccion = await db.TiposAccionMejora.AsNoTracking().OrderBy(x => x.Nombre).ToListAsync();
+        estadosAccionMejora = await db.EstadosAccionMejora.AsNoTracking().OrderBy(x => x.Orden).ThenBy(x => x.Nombre).ToListAsync();
+        areasProyecto = await db.AreasProyecto.AsNoTracking().OrderBy(x => x.Nombre).ToListAsync();
+        estadosProyecto = await db.EstadosProyecto.AsNoTracking().OrderBy(x => x.Orden).ThenBy(x => x.Nombre).ToListAsync();
+        prioridadesProyecto = await db.PrioridadesProyecto.AsNoTracking().OrderBy(x => x.Orden).ThenBy(x => x.Nombre).ToListAsync();
+        estadosFaseProyecto = await db.EstadosFaseProyecto.AsNoTracking().OrderBy(x => x.Orden).ThenBy(x => x.Nombre).ToListAsync();
     }
 
-    private async Task GuardarDepartamentoAsync()
-    {
-        if (!ValidarTexto(departamentoNombre, "El nombre del departamento es obligatorio.")) return;
+    private RenderFragment RenderHeader(string titulo, Func<Task> onAdd) => @<div class="table-toolbar">
+        <div>
+            <div class="card-title mb-1">@titulo</div>
+            <div class="card-category mb-0">Los registros se editan en linea y el alta se realiza desde dialogo.</div>
+        </div>
+        <button type="button" class="btn traza-icon-btn traza-icon-btn-primary" @onclick="onAdd" title="Nuevo registro">
+            <i class="fi fi-rr-plus"></i>
+        </button>
+    </div>;
 
-        await using var db = await DbContextFactory.CreateDbContextAsync();
-        if (departamentoSeleccionado is null)
+    private RenderFragment RenderActionsColumn<TItem>(
+        RadzenDataGrid<TItem>? grid,
+        string title,
+        Func<TItem, Task> onEdit,
+        Func<TItem, Task> onSave,
+        Func<TItem, Task> onCancel,
+        Func<TItem, Task> onDelete) where TItem : class
+        => @<RadzenDataGridColumn TItem="TItem" Title="@title" Width="150px" TextAlign="TextAlign.Center">
+            <Template Context="item">
+                <button type="button" class="btn traza-icon-btn" @onclick="() => onEdit(item)" title="Editar">
+                    <i class="fi fi-rr-pencil"></i>
+                </button>
+                <button type="button" class="btn traza-icon-btn traza-icon-btn-danger" @onclick="() => onDelete(item)" title="Eliminar">
+                    <i class="fi fi-rr-trash"></i>
+                </button>
+            </Template>
+            <EditTemplate Context="item">
+                <button type="button" class="btn traza-icon-btn traza-icon-btn-success" @onclick="() => onSave(item)" title="Guardar">
+                    <i class="fi fi-rr-check"></i>
+                </button>
+                <button type="button" class="btn traza-icon-btn" @onclick="() => onCancel(item)" title="Cancelar">
+                    <i class="fi fi-rr-cross-small"></i>
+                </button>
+            </EditTemplate>
+        </RadzenDataGridColumn>;
+
+    private async Task EditarFilaAsync<TItem>(RadzenDataGrid<TItem>? grid, TItem item) where TItem : class
+    {
+        if (grid is null)
         {
-            db.Departamentos.Add(new Departamento { Nombre = departamentoNombre.Trim() });
-        }
-        else
-        {
-            var entidad = await db.Departamentos.FindAsync(departamentoSeleccionado.Id);
-            if (entidad is null) return;
-            entidad.Nombre = departamentoNombre.Trim();
-        }
-
-        await GuardarCambiosAsync(db, "Departamento guardado.");
-        await RecargarTodoAsync();
-        LimpiarDepartamento();
-    }
-
-    private async Task EliminarDepartamentoAsync()
-    {
-        await EliminarEntidadAsync<Departamento>(departamentoSeleccionado?.Id, "Eliminar departamento", "Este departamento se eliminara si no esta en uso.");
-        await RecargarTodoAsync();
-        LimpiarDepartamento();
-    }
-
-    private void SeleccionarDepartamento(Departamento item)
-    {
-        departamentoSeleccionado = item;
-        departamentoNombre = item.Nombre;
-    }
-
-    private void LimpiarDepartamento()
-    {
-        departamentoSeleccionado = null;
-        departamentoNombre = string.Empty;
-    }
-
-    private async Task GuardarProcesoAsync()
-    {
-        if (!ValidarTexto(procesoNombre, "El nombre del proceso es obligatorio.")) return;
-
-        await using var db = await DbContextFactory.CreateDbContextAsync();
-        if (procesoSeleccionado is null)
-        {
-            db.Procesos.Add(new Proceso { Nombre = procesoNombre.Trim() });
-        }
-        else
-        {
-            var entidad = await db.Procesos.FindAsync(procesoSeleccionado.Id);
-            if (entidad is null) return;
-            entidad.Nombre = procesoNombre.Trim();
-        }
-
-        await GuardarCambiosAsync(db, "Proceso guardado.");
-        await RecargarTodoAsync();
-        LimpiarProceso();
-    }
-
-    private async Task EliminarProcesoAsync()
-    {
-        await EliminarEntidadAsync<Proceso>(procesoSeleccionado?.Id, "Eliminar proceso", "Este proceso se eliminara si no esta relacionado con otros registros.");
-        await RecargarTodoAsync();
-        LimpiarProceso();
-    }
-
-    private void SeleccionarProceso(Proceso item)
-    {
-        procesoSeleccionado = item;
-        procesoNombre = item.Nombre;
-    }
-
-    private void LimpiarProceso()
-    {
-        procesoSeleccionado = null;
-        procesoNombre = string.Empty;
-    }
-
-    private async Task GuardarTipologiaAsync()
-    {
-        if (!tipologiaProcesoId.HasValue)
-        {
-            MostrarAviso("Debes seleccionar un proceso.");
             return;
         }
 
-        if (!ValidarTexto(tipologiaNombre, "El nombre de la tipologia es obligatorio.")) return;
+        await grid.EditRow(item);
+    }
+
+    private async Task CancelarEdicionAsync<TItem>(RadzenDataGrid<TItem>? grid, TItem item) where TItem : class
+    {
+        if (grid is not null)
+        {
+            grid.CancelEditRow(item);
+        }
+
+        await RecargarTodoAsync();
+    }
+
+    private async Task GuardarFilaAsync<TItem>(RadzenDataGrid<TItem>? grid, TItem item) where TItem : class
+    {
+        if (!ValidarEntidad(item))
+        {
+            return;
+        }
 
         await using var db = await DbContextFactory.CreateDbContextAsync();
-        if (tipologiaSeleccionada is null)
+        var entidad = await db.Set<TItem>().FindAsync(GetId(item));
+        if (entidad is null)
         {
-            db.TipologiasIncidencia.Add(new TipologiaIncidencia
+            MostrarAviso("No se ha encontrado el registro.");
+            return;
+        }
+
+        CopiarValores(item, entidad);
+        await GuardarCambiosAsync(db, "Registro actualizado.");
+
+        if (grid is not null)
+        {
+            await grid.UpdateRow(item);
+        }
+
+        await RecargarTodoAsync();
+    }
+
+    private async Task AbrirNuevoDepartamentoAsync() => await AbrirDialogoSimpleYCrearAsync<Departamento>("Nuevo departamento");
+    private async Task AbrirNuevoProcesoAsync() => await AbrirDialogoSimpleYCrearAsync<Proceso>("Nuevo proceso");
+    private async Task AbrirNuevaAreaProyectoAsync() => await AbrirDialogoSimpleYCrearAsync<AreaProyecto>("Nueva area de proyecto");
+    private async Task AbrirNuevoTipoDocumentoAsync() => await AbrirDialogoSimpleYCrearAsync<TipoDocumentoReferencia>("Nuevo tipo de documento");
+    private async Task AbrirNuevoTipoAdjuntoAsync() => await AbrirDialogoSimpleYCrearAsync<TipoAdjunto>("Nuevo tipo de adjunto");
+    private async Task AbrirNuevoTipoCosteAsync() => await AbrirDialogoSimpleYCrearAsync<TipoCosteNoCalidad>("Nuevo tipo de coste");
+    private async Task AbrirNuevoOrigenAccionAsync() => await AbrirDialogoSimpleYCrearAsync<OrigenAccionMejora>("Nuevo origen de mejora");
+    private async Task AbrirNuevoTipoAccionAsync() => await AbrirDialogoSimpleYCrearAsync<TipoAccionMejora>("Nuevo tipo de accion");
+    private async Task AbrirNuevoEstadoDetalleAsync() => await AbrirDialogoSimpleYCrearAsync<EstadoDetalleIncidencia>("Nuevo estado de detalle", mostrarOrden: true);
+    private async Task AbrirNuevaPrioridadProyectoAsync() => await AbrirDialogoSimpleYCrearAsync<PrioridadProyecto>("Nueva prioridad", mostrarOrden: true);
+    private async Task AbrirNuevoEstadoIncidenciaAsync() => await AbrirDialogoSimpleYCrearAsync<EstadoIncidencia>("Nuevo estado de incidencia", mostrarOrden: true, mostrarEsCierre: true);
+    private async Task AbrirNuevoEstadoAccionAsync() => await AbrirDialogoSimpleYCrearAsync<EstadoAccionMejora>("Nuevo estado de accion", mostrarOrden: true, mostrarEsCierre: true);
+    private async Task AbrirNuevoEstadoProyectoAsync() => await AbrirDialogoSimpleYCrearAsync<EstadoProyecto>("Nuevo estado de proyecto", mostrarOrden: true, mostrarEsCierre: true);
+    private async Task AbrirNuevoEstadoFaseAsync() => await AbrirDialogoSimpleYCrearAsync<EstadoFaseProyecto>("Nuevo estado de fase", mostrarOrden: true, mostrarEsCierre: true);
+
+    private async Task AbrirNuevaTipologiaAsync()
+    {
+        var modelo = new TipologiaFormModel
+        {
+            ProcesoId = procesos.FirstOrDefault()?.Id,
+            Activa = true
+        };
+
+        var resultado = await DialogService.OpenAsync<TipologiaDialog>(
+            "Nueva tipologia",
+            new Dictionary<string, object?>
             {
-                Nombre = tipologiaNombre.Trim(),
-                ProcesoId = tipologiaProcesoId.Value,
-                Activa = tipologiaActiva
-            });
-        }
-        else
+                [nameof(TipologiaDialog.Modelo)] = modelo,
+                [nameof(TipologiaDialog.Procesos)] = procesos
+            },
+            new DialogOptions { Width = "520px", CloseDialogOnOverlayClick = true });
+
+        if (resultado is not TipologiaFormModel tipologia || !ValidarTipologia(tipologia))
         {
-            var entidad = await db.TipologiasIncidencia.FindAsync(tipologiaSeleccionada.Id);
-            if (entidad is null) return;
-            entidad.Nombre = tipologiaNombre.Trim();
-            entidad.ProcesoId = tipologiaProcesoId.Value;
-            entidad.Activa = tipologiaActiva;
+            return;
         }
-
-        await GuardarCambiosAsync(db, "Tipologia guardada.");
-        await RecargarTodoAsync();
-        LimpiarTipologia();
-    }
-
-    private async Task EliminarTipologiaAsync()
-    {
-        await EliminarEntidadAsync<TipologiaIncidencia>(tipologiaSeleccionada?.Id, "Eliminar tipologia", "La tipologia se eliminara si no esta usada por incidencias.");
-        await RecargarTodoAsync();
-        LimpiarTipologia();
-    }
-
-    private void SeleccionarTipologia(TipologiaIncidencia item)
-    {
-        tipologiaSeleccionada = item;
-        tipologiaNombre = item.Nombre;
-        tipologiaProcesoId = item.ProcesoId;
-        tipologiaActiva = item.Activa;
-    }
-
-    private void LimpiarTipologia()
-    {
-        tipologiaSeleccionada = null;
-        tipologiaProcesoId = procesos.FirstOrDefault()?.Id;
-        tipologiaNombre = string.Empty;
-        tipologiaActiva = true;
-    }
-
-    private async Task GuardarAreaProyectoAsync()
-    {
-        if (!ValidarTexto(areaProyectoNombre, "El nombre del area es obligatorio.")) return;
 
         await using var db = await DbContextFactory.CreateDbContextAsync();
-        if (areaProyectoSeleccionada is null)
+        db.TipologiasIncidencia.Add(new TipologiaIncidencia
         {
-            db.AreasProyecto.Add(new AreaProyecto { Nombre = areaProyectoNombre.Trim() });
-        }
-        else
+            ProcesoId = tipologia.ProcesoId!.Value,
+            Nombre = tipologia.Nombre.Trim(),
+            Activa = tipologia.Activa
+        });
+
+        await GuardarCambiosAsync(db, "Tipologia creada.");
+        await RecargarTodoAsync();
+    }
+
+    private async Task AbrirDialogoSimpleYCrearAsync<TItem>(string titulo, bool mostrarOrden = false, bool mostrarEsCierre = false) where TItem : class, new()
+    {
+        var modelo = new CatalogoSimpleFormModel();
+        if (mostrarOrden)
         {
-            var entidad = await db.AreasProyecto.FindAsync(areaProyectoSeleccionada.Id);
-            if (entidad is null) return;
-            entidad.Nombre = areaProyectoNombre.Trim();
+            modelo.Orden = 1;
         }
 
-        await GuardarCambiosAsync(db, "Area guardada.");
-        await RecargarTodoAsync();
-        LimpiarAreaProyecto();
-    }
+        var resultado = await DialogService.OpenAsync<CatalogoSimpleDialog>(
+            titulo,
+            new Dictionary<string, object?>
+            {
+                [nameof(CatalogoSimpleDialog.Modelo)] = modelo,
+                [nameof(CatalogoSimpleDialog.MostrarOrden)] = mostrarOrden,
+                [nameof(CatalogoSimpleDialog.MostrarEsCierre)] = mostrarEsCierre
+            },
+            new DialogOptions { Width = "480px", CloseDialogOnOverlayClick = true });
 
-    private async Task EliminarAreaProyectoAsync()
-    {
-        await EliminarEntidadAsync<AreaProyecto>(areaProyectoSeleccionada?.Id, "Eliminar area", "El area se eliminara si no esta relacionada con proyectos.");
-        await RecargarTodoAsync();
-        LimpiarAreaProyecto();
-    }
-
-    private void SeleccionarAreaProyecto(AreaProyecto item)
-    {
-        areaProyectoSeleccionada = item;
-        areaProyectoNombre = item.Nombre;
-    }
-
-    private void LimpiarAreaProyecto()
-    {
-        areaProyectoSeleccionada = null;
-        areaProyectoNombre = string.Empty;
-    }
-
-    private async Task GuardarTipoDocumentoAsync()
-    {
-        if (!ValidarTexto(tipoDocumentoNombre, "El nombre del tipo de documento es obligatorio.")) return;
+        if (resultado is not CatalogoSimpleFormModel formulario || !ValidarFormulario(formulario, mostrarOrden))
+        {
+            return;
+        }
 
         await using var db = await DbContextFactory.CreateDbContextAsync();
-        if (tipoDocumentoSeleccionado is null)
-        {
-            db.TiposDocumentoReferencia.Add(new TipoDocumentoReferencia { Nombre = tipoDocumentoNombre.Trim() });
-        }
-        else
-        {
-            var entidad = await db.TiposDocumentoReferencia.FindAsync(tipoDocumentoSeleccionado.Id);
-            if (entidad is null) return;
-            entidad.Nombre = tipoDocumentoNombre.Trim();
-        }
+        var entidad = new TItem();
+        AplicarFormularioSimple(entidad, formulario);
+        db.Set<TItem>().Add(entidad);
 
-        await GuardarCambiosAsync(db, "Tipo de documento guardado.");
+        await GuardarCambiosAsync(db, "Registro creado.");
         await RecargarTodoAsync();
-        LimpiarTipoDocumento();
-    }
-
-    private async Task EliminarTipoDocumentoAsync()
-    {
-        await EliminarEntidadAsync<TipoDocumentoReferencia>(tipoDocumentoSeleccionado?.Id, "Eliminar tipo de documento", "Se eliminara si no esta en uso.");
-        await RecargarTodoAsync();
-        LimpiarTipoDocumento();
-    }
-
-    private void SeleccionarTipoDocumento(TipoDocumentoReferencia item)
-    {
-        tipoDocumentoSeleccionado = item;
-        tipoDocumentoNombre = item.Nombre;
-    }
-
-    private void LimpiarTipoDocumento()
-    {
-        tipoDocumentoSeleccionado = null;
-        tipoDocumentoNombre = string.Empty;
-    }
-
-    private async Task GuardarTipoAdjuntoAsync()
-    {
-        if (!ValidarTexto(tipoAdjuntoNombre, "El nombre del tipo de adjunto es obligatorio.")) return;
-
-        await using var db = await DbContextFactory.CreateDbContextAsync();
-        if (tipoAdjuntoSeleccionado is null)
-        {
-            db.TiposAdjunto.Add(new TipoAdjunto { Nombre = tipoAdjuntoNombre.Trim() });
-        }
-        else
-        {
-            var entidad = await db.TiposAdjunto.FindAsync(tipoAdjuntoSeleccionado.Id);
-            if (entidad is null) return;
-            entidad.Nombre = tipoAdjuntoNombre.Trim();
-        }
-
-        await GuardarCambiosAsync(db, "Tipo de adjunto guardado.");
-        await RecargarTodoAsync();
-        LimpiarTipoAdjunto();
-    }
-
-    private async Task EliminarTipoAdjuntoAsync()
-    {
-        await EliminarEntidadAsync<TipoAdjunto>(tipoAdjuntoSeleccionado?.Id, "Eliminar tipo de adjunto", "Se eliminara si no esta en uso.");
-        await RecargarTodoAsync();
-        LimpiarTipoAdjunto();
-    }
-
-    private void SeleccionarTipoAdjunto(TipoAdjunto item)
-    {
-        tipoAdjuntoSeleccionado = item;
-        tipoAdjuntoNombre = item.Nombre;
-    }
-
-    private void LimpiarTipoAdjunto()
-    {
-        tipoAdjuntoSeleccionado = null;
-        tipoAdjuntoNombre = string.Empty;
-    }
-
-    private async Task GuardarOrigenAccionAsync()
-    {
-        if (!ValidarTexto(origenAccionNombre, "El nombre del origen es obligatorio.")) return;
-
-        await using var db = await DbContextFactory.CreateDbContextAsync();
-        if (origenAccionSeleccionado is null)
-        {
-            db.OrigenesAccionMejora.Add(new OrigenAccionMejora { Nombre = origenAccionNombre.Trim() });
-        }
-        else
-        {
-            var entidad = await db.OrigenesAccionMejora.FindAsync(origenAccionSeleccionado.Id);
-            if (entidad is null) return;
-            entidad.Nombre = origenAccionNombre.Trim();
-        }
-
-        await GuardarCambiosAsync(db, "Origen guardado.");
-        await RecargarTodoAsync();
-        LimpiarOrigenAccion();
-    }
-
-    private async Task EliminarOrigenAccionAsync()
-    {
-        await EliminarEntidadAsync<OrigenAccionMejora>(origenAccionSeleccionado?.Id, "Eliminar origen", "Se eliminara si no esta en uso.");
-        await RecargarTodoAsync();
-        LimpiarOrigenAccion();
-    }
-
-    private void SeleccionarOrigenAccion(OrigenAccionMejora item)
-    {
-        origenAccionSeleccionado = item;
-        origenAccionNombre = item.Nombre;
-    }
-
-    private void LimpiarOrigenAccion()
-    {
-        origenAccionSeleccionado = null;
-        origenAccionNombre = string.Empty;
-    }
-
-    private async Task GuardarTipoAccionAsync()
-    {
-        if (!ValidarTexto(tipoAccionNombre, "El nombre del tipo de accion es obligatorio.")) return;
-
-        await using var db = await DbContextFactory.CreateDbContextAsync();
-        if (tipoAccionSeleccionado is null)
-        {
-            db.TiposAccionMejora.Add(new TipoAccionMejora { Nombre = tipoAccionNombre.Trim() });
-        }
-        else
-        {
-            var entidad = await db.TiposAccionMejora.FindAsync(tipoAccionSeleccionado.Id);
-            if (entidad is null) return;
-            entidad.Nombre = tipoAccionNombre.Trim();
-        }
-
-        await GuardarCambiosAsync(db, "Tipo de accion guardado.");
-        await RecargarTodoAsync();
-        LimpiarTipoAccion();
-    }
-
-    private async Task EliminarTipoAccionAsync()
-    {
-        await EliminarEntidadAsync<TipoAccionMejora>(tipoAccionSeleccionado?.Id, "Eliminar tipo de accion", "Se eliminara si no esta en uso.");
-        await RecargarTodoAsync();
-        LimpiarTipoAccion();
-    }
-
-    private void SeleccionarTipoAccion(TipoAccionMejora item)
-    {
-        tipoAccionSeleccionado = item;
-        tipoAccionNombre = item.Nombre;
-    }
-
-    private void LimpiarTipoAccion()
-    {
-        tipoAccionSeleccionado = null;
-        tipoAccionNombre = string.Empty;
     }
 
     private async Task GuardarCambiosAsync(ApplicationDbContext db, string mensajeExito)
@@ -653,13 +554,8 @@ else
         }
     }
 
-    private async Task EliminarEntidadAsync<T>(int? id, string titulo, string mensaje) where T : class
+    private async Task EliminarEntidadAsync<T>(int id, string titulo, string mensaje) where T : class
     {
-        if (!id.HasValue)
-        {
-            return;
-        }
-
         var confirmacion = await DialogService.Confirm(mensaje, titulo, new ConfirmOptions
         {
             OkButtonText = "Eliminar",
@@ -672,7 +568,7 @@ else
         }
 
         await using var db = await DbContextFactory.CreateDbContextAsync();
-        var entidad = await db.Set<T>().FindAsync(id.Value);
+        var entidad = await db.Set<T>().FindAsync(id);
         if (entidad is null)
         {
             return;
@@ -689,18 +585,176 @@ else
         {
             NotificationService.Notify(NotificationSeverity.Warning, "No se pudo eliminar", "Este registro esta siendo usado por otros datos y no se puede borrar.");
         }
+
+        await RecargarTodoAsync();
     }
 
-    private bool ValidarTexto(string? valor, string mensaje)
+    private bool ValidarFormulario(CatalogoSimpleFormModel formulario, bool requiereOrden)
     {
-        if (!string.IsNullOrWhiteSpace(valor))
+        if (string.IsNullOrWhiteSpace(formulario.Nombre))
         {
-            return true;
+            MostrarAviso("El nombre es obligatorio.");
+            return false;
         }
 
-        MostrarAviso(mensaje);
-        return false;
+        if (requiereOrden && (!formulario.Orden.HasValue || formulario.Orden <= 0))
+        {
+            MostrarAviso("El orden debe ser mayor que cero.");
+            return false;
+        }
+
+        return true;
     }
+
+    private bool ValidarTipologia(TipologiaFormModel formulario)
+    {
+        if (!formulario.ProcesoId.HasValue)
+        {
+            MostrarAviso("Debes seleccionar un proceso.");
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(formulario.Nombre))
+        {
+            MostrarAviso("El nombre es obligatorio.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool ValidarEntidad<TItem>(TItem item) where TItem : class
+    {
+        switch (item)
+        {
+            case TipologiaIncidencia tipologia:
+                if (string.IsNullOrWhiteSpace(tipologia.Nombre))
+                {
+                    MostrarAviso("El nombre es obligatorio.");
+                    return false;
+                }
+
+                if (tipologia.ProcesoId <= 0)
+                {
+                    MostrarAviso("Debes seleccionar un proceso.");
+                    return false;
+                }
+
+                return true;
+            case EstadoIncidencia estadoIncidencia:
+                return ValidarNombreOrden(estadoIncidencia.Nombre, estadoIncidencia.Orden);
+            case EstadoDetalleIncidencia estadoDetalle:
+                return ValidarNombreOrden(estadoDetalle.Nombre, estadoDetalle.Orden);
+            case EstadoAccionMejora estadoAccion:
+                return ValidarNombreOrden(estadoAccion.Nombre, estadoAccion.Orden);
+            case EstadoProyecto estadoProyectoItem:
+                return ValidarNombreOrden(estadoProyectoItem.Nombre, estadoProyectoItem.Orden);
+            case PrioridadProyecto prioridad:
+                return ValidarNombreOrden(prioridad.Nombre, prioridad.Orden);
+            case EstadoFaseProyecto estadoFase:
+                return ValidarNombreOrden(estadoFase.Nombre, estadoFase.Orden);
+            default:
+                var nombre = typeof(TItem).GetProperty("Nombre")?.GetValue(item)?.ToString();
+                if (!string.IsNullOrWhiteSpace(nombre))
+                {
+                    return true;
+                }
+
+                MostrarAviso("El nombre es obligatorio.");
+                return false;
+        }
+    }
+
+    private bool ValidarNombreOrden(string? nombre, int orden)
+    {
+        if (string.IsNullOrWhiteSpace(nombre))
+        {
+            MostrarAviso("El nombre es obligatorio.");
+            return false;
+        }
+
+        if (orden <= 0)
+        {
+            MostrarAviso("El orden debe ser mayor que cero.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private static void AplicarFormularioSimple<TItem>(TItem entidad, CatalogoSimpleFormModel formulario) where TItem : class
+    {
+        typeof(TItem).GetProperty("Nombre")?.SetValue(entidad, formulario.Nombre.Trim());
+        typeof(TItem).GetProperty("Orden")?.SetValue(entidad, formulario.Orden);
+        typeof(TItem).GetProperty("EsCierre")?.SetValue(entidad, formulario.EsCierre);
+    }
+
+    private static void CopiarValores<TItem>(TItem origen, TItem destino) where TItem : class
+    {
+        switch (origen)
+        {
+            case Departamento x when destino is Departamento y:
+                y.Nombre = x.Nombre.Trim();
+                break;
+            case Proceso x when destino is Proceso y:
+                y.Nombre = x.Nombre.Trim();
+                break;
+            case TipologiaIncidencia x when destino is TipologiaIncidencia y:
+                y.Nombre = x.Nombre.Trim();
+                y.ProcesoId = x.ProcesoId;
+                y.Activa = x.Activa;
+                break;
+            case EstadoIncidencia x when destino is EstadoIncidencia y:
+                y.Nombre = x.Nombre.Trim();
+                y.Orden = x.Orden;
+                y.EsCierre = x.EsCierre;
+                break;
+            case EstadoDetalleIncidencia x when destino is EstadoDetalleIncidencia y:
+                y.Nombre = x.Nombre.Trim();
+                y.Orden = x.Orden;
+                break;
+            case TipoDocumentoReferencia x when destino is TipoDocumentoReferencia y:
+                y.Nombre = x.Nombre.Trim();
+                break;
+            case TipoAdjunto x when destino is TipoAdjunto y:
+                y.Nombre = x.Nombre.Trim();
+                break;
+            case TipoCosteNoCalidad x when destino is TipoCosteNoCalidad y:
+                y.Nombre = x.Nombre.Trim();
+                break;
+            case OrigenAccionMejora x when destino is OrigenAccionMejora y:
+                y.Nombre = x.Nombre.Trim();
+                break;
+            case TipoAccionMejora x when destino is TipoAccionMejora y:
+                y.Nombre = x.Nombre.Trim();
+                break;
+            case EstadoAccionMejora x when destino is EstadoAccionMejora y:
+                y.Nombre = x.Nombre.Trim();
+                y.Orden = x.Orden;
+                y.EsCierre = x.EsCierre;
+                break;
+            case AreaProyecto x when destino is AreaProyecto y:
+                y.Nombre = x.Nombre.Trim();
+                break;
+            case EstadoProyecto x when destino is EstadoProyecto y:
+                y.Nombre = x.Nombre.Trim();
+                y.Orden = x.Orden;
+                y.EsCierre = x.EsCierre;
+                break;
+            case PrioridadProyecto x when destino is PrioridadProyecto y:
+                y.Nombre = x.Nombre.Trim();
+                y.Orden = x.Orden;
+                break;
+            case EstadoFaseProyecto x when destino is EstadoFaseProyecto y:
+                y.Nombre = x.Nombre.Trim();
+                y.Orden = x.Orden;
+                y.EsCierre = x.EsCierre;
+                break;
+        }
+    }
+
+    private static int GetId<TItem>(TItem item) where TItem : class
+        => (int)(typeof(TItem).GetProperty("Id")?.GetValue(item) ?? 0);
 
     private void MostrarAviso(string mensaje)
     {

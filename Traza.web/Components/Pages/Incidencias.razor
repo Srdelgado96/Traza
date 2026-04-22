@@ -1,0 +1,154 @@
+@page "/incidencias"
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@using Traza.Web.Components.Dialogs
+@using Traza.Web.Data
+@using Traza.Web.Data.Entidades
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<PageTitle>Gestion de Incidencias | Traza</PageTitle>
+
+@if (cargando)
+{
+    <div class="card card-round">
+        <div class="card-body py-5 text-center">
+            <RadzenProgressBarCircular Mode="ProgressBarMode.Indeterminate" />
+            <div class="mt-3 text-muted">Cargando incidencias...</div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="page-header">
+        <div class="page-header-content">
+            <h4 class="page-title">Gestion de Incidencias</h4>
+            <div class="text-muted">Vista general de incidencias con acceso al detalle completo.</div>
+        </div>
+        <div class="page-header-actions">
+            <button type="button" class="btn btn-primary btn-round" @onclick="AbrirNuevoAsync">
+                <i class="fi fi-rr-plus me-2"></i>
+                Nueva incidencia
+            </button>
+        </div>
+    </div>
+
+    <div class="card card-round">
+        <div class="card-body">
+            <RadzenDataGrid Data="@incidencias" TItem="Incidencia" AllowPaging="true" PageSize="10" EmptyText="No hay incidencias registradas.">
+                <Columns>
+                    <RadzenDataGridColumn TItem="Incidencia" Property="FechaCreacion" Title="Fecha" FormatString="{0:dd/MM/yyyy}" Width="120px" />
+                    <RadzenDataGridColumn TItem="Incidencia" Title="Proceso">
+                        <Template Context="item">@item.Proceso.Nombre</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Incidencia" Title="Tipologia">
+                        <Template Context="item">@(item.Tipologia?.Nombre ?? "-")</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Incidencia" Property="Descripcion" Title="Descripcion" />
+                    <RadzenDataGridColumn TItem="Incidencia" Title="Estado">
+                        <Template Context="item">@item.Estado.Nombre</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Incidencia" Title="Acciones" Width="150px" TextAlign="TextAlign.Center">
+                        <Template Context="item">
+                            <button type="button" class="btn traza-icon-btn" @onclick="() => AbrirDetalleAsync(item, false)" title="Ver">
+                                <i class="fi fi-rr-eye"></i>
+                            </button>
+                            <button type="button" class="btn traza-icon-btn" @onclick="() => AbrirDetalleAsync(item, true)" title="Editar">
+                                <i class="fi fi-rr-pencil"></i>
+                            </button>
+                            <button type="button" class="btn traza-icon-btn traza-icon-btn-danger" @onclick="() => EliminarAsync(item.Id)" title="Eliminar">
+                                <i class="fi fi-rr-trash"></i>
+                            </button>
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </div>
+    </div>
+}
+
+@code {
+    private bool cargando = true;
+    private List<Incidencia> incidencias = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RecargarAsync();
+        cargando = false;
+    }
+
+    private async Task RecargarAsync()
+    {
+        await using var db = await DbContextFactory.CreateDbContextAsync();
+        incidencias = await db.Incidencias
+            .AsNoTracking()
+            .Include(x => x.Proceso)
+            .Include(x => x.Tipologia)
+            .Include(x => x.Estado)
+            .Include(x => x.Detector)
+            .OrderByDescending(x => x.FechaCreacion)
+            .ToListAsync();
+    }
+
+    private async Task AbrirDetalleAsync(Incidencia incidencia, bool modoEdicion)
+    {
+        await using var db = await DbContextFactory.CreateDbContextAsync();
+        var detalle = await db.Incidencias
+            .AsNoTracking()
+            .Include(x => x.Proceso)
+            .Include(x => x.Tipologia)
+            .Include(x => x.Estado)
+            .Include(x => x.Detector)
+            .Include(x => x.Coordinador)
+            .Include(x => x.Detalles).ThenInclude(x => x.Estado)
+            .Include(x => x.Tareas).ThenInclude(x => x.UsuarioAsignado)
+            .Include(x => x.Comentarios).ThenInclude(x => x.Usuario)
+            .Include(x => x.Documentos).ThenInclude(x => x.TipoAdjunto)
+            .FirstAsync(x => x.Id == incidencia.Id);
+
+        await DialogService.OpenAsync<IncidenciaDetalleDialog>(
+            modoEdicion ? "Editar incidencia" : "Ver incidencia",
+            new Dictionary<string, object?> { [nameof(IncidenciaDetalleDialog.Incidencia)] = detalle },
+            new DialogOptions { Width = "1100px", Height = "760px", CloseDialogOnOverlayClick = true });
+    }
+
+    private async Task EliminarAsync(int id)
+    {
+        var confirmacion = await DialogService.Confirm("La incidencia se eliminara junto con sus datos hijos.", "Eliminar incidencia", new ConfirmOptions
+        {
+            OkButtonText = "Eliminar",
+            CancelButtonText = "Cancelar"
+        });
+
+        if (confirmacion != true)
+        {
+            return;
+        }
+
+        await using var db = await DbContextFactory.CreateDbContextAsync();
+        var entidad = await db.Incidencias.FindAsync(id);
+        if (entidad is null)
+        {
+            return;
+        }
+
+        db.Remove(entidad);
+        try
+        {
+            await db.SaveChangesAsync();
+            NotificationService.Notify(NotificationSeverity.Success, "Eliminado", "Incidencia eliminada correctamente.");
+        }
+        catch (DbUpdateException)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "No se pudo eliminar", "La incidencia tiene relaciones que impiden su borrado.");
+        }
+
+        await RecargarAsync();
+    }
+
+    private void AbrirNuevoAsync()
+    {
+        NotificationService.Notify(NotificationSeverity.Info, "Alta pendiente", "El formulario de nueva incidencia sera el siguiente paso de esta pantalla.");
+    }
+}

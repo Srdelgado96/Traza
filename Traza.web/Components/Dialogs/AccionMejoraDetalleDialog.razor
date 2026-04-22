@@ -1,0 +1,113 @@
+@using Traza.Web.Data.Entidades
+@inject DialogService DialogService
+
+<div class="p-3">
+    <div class="row g-3 detail-summary-grid">
+        <div class="col-md-6">
+            <div class="detail-summary-card">
+                <div class="detail-label">Fecha de creación</div>
+                <div class="detail-value">@Accion.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="detail-summary-card">
+                <div class="detail-label">Estado</div>
+                <div class="detail-value">@Accion.Estado.Nombre</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="detail-summary-card">
+                <div class="detail-label">Solicitante</div>
+                <div class="detail-value">@Accion.Solicitante.Nombre</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="detail-summary-card">
+                <div class="detail-label">Coordinador</div>
+                <div class="detail-value">@(Accion.Coordinador?.Nombre ?? "-")</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="detail-summary-card">
+                <div class="detail-label">Origen</div>
+                <div class="detail-value">@(Accion.Origen?.Nombre ?? "-")</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="detail-summary-card">
+                <div class="detail-label">Tipo de acción</div>
+                <div class="detail-value">@(Accion.TipoAccion?.Nombre ?? "-")</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-section mt-4">
+        <div class="detail-label">Descripción</div>
+        <div class="detail-value">@Accion.Descripcion</div>
+    </div>
+
+    <RadzenTabs Class="mt-4">
+        <Tabs>
+            <RadzenTabsItem Text="Tareas">
+                <RadzenDataGrid Data="@Accion.Tareas" TItem="TareaAccionMejora" EmptyText="No hay tareas registradas.">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="TareaAccionMejora" Property="Tarea" Title="Tarea" />
+                        <RadzenDataGridColumn TItem="TareaAccionMejora" Title="Asignado">
+                            <Template Context="item">@item.UsuarioAsignado.Nombre</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="TareaAccionMejora" Property="FechaFinEsperada" Title="Fecha objetivo" FormatString="{0:dd/MM/yyyy}" />
+                        <RadzenDataGridColumn TItem="TareaAccionMejora" Title="Cerrada">
+                            <Template Context="item">@(item.Cerrada ? "Sí" : "No")</Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenTabsItem>
+            <RadzenTabsItem Text="Comentarios">
+                <RadzenDataGrid Data="@Accion.Comentarios" TItem="ComentarioAccionMejora" EmptyText="No hay comentarios registrados.">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="ComentarioAccionMejora" Title="Usuario">
+                            <Template Context="item">@item.Usuario.Nombre</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="ComentarioAccionMejora" Property="Fecha" Title="Fecha" FormatString="{0:dd/MM/yyyy HH:mm}" />
+                        <RadzenDataGridColumn TItem="ComentarioAccionMejora" Property="Contenido" Title="Comentario" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenTabsItem>
+            <RadzenTabsItem Text="Documentos">
+                <RadzenDataGrid Data="@Accion.Documentos" TItem="DocumentoAccionMejora" EmptyText="No hay documentos registrados.">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="DocumentoAccionMejora" Property="Titulo" Title="Título" />
+                        <RadzenDataGridColumn TItem="DocumentoAccionMejora" Title="Tipo">
+                            <Template Context="item">@item.TipoAdjunto.Nombre</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="DocumentoAccionMejora" Property="NombreArchivo" Title="Archivo" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenTabsItem>
+            <RadzenTabsItem Text="Acciones hijas">
+                <RadzenDataGrid Data="@Accion.AccionesHijas" TItem="AccionMejora" EmptyText="No hay acciones hijas registradas.">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="AccionMejora" Property="Descripcion" Title="Descripción" />
+                        <RadzenDataGridColumn TItem="AccionMejora" Title="Estado">
+                            <Template Context="item">@item.Estado.Nombre</Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+
+    <div class="d-flex justify-content-end mt-4">
+        <RadzenButton Text="Cerrar" ButtonStyle="ButtonStyle.Light" Click="@Cerrar" />
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public AccionMejora Accion { get; set; } = null!;
+
+    private void Cerrar()
+    {
+        DialogService.Close();
+    }
+}

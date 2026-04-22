@@ -1,0 +1,55 @@
+@using Traza.Web.Components.Models
+@using Traza.Web.Data.Entidades
+@inject DialogService DialogService
+
+<RadzenTemplateForm Data="@Modelo" Submit="@OnSubmit">
+    <div class="p-3">
+        <div class="mb-3">
+            <label class="form-label">Proceso</label>
+            <RadzenDropDown Data="@Procesos"
+                            Name="Proceso"
+                            TextProperty="Nombre"
+                            ValueProperty="Id"
+                            @bind-Value="Modelo.ProcesoId"
+                            Style="width:100%;" />
+            <RadzenRequiredValidator Component="Proceso" Text="El proceso es obligatorio." Popup="false" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Nombre</label>
+            <RadzenTextBox @bind-Value="Modelo.Nombre" Name="Nombre" Style="width:100%;" />
+            <RadzenRequiredValidator Component="Nombre" Text="El nombre es obligatorio." Popup="false" />
+        </div>
+
+        <div class="form-check mb-4">
+            <input class="form-check-input" type="checkbox" id="tipologiaActivaDialog" @bind="Modelo.Activa" />
+            <label class="form-check-label" for="tipologiaActivaDialog">Activa</label>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+            <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" Click="@Cancelar" />
+            <RadzenButton Text="Guardar" Icon="save" ButtonType="ButtonType.Submit" />
+        </div>
+    </div>
+</RadzenTemplateForm>
+
+@code {
+    [Parameter]
+    public TipologiaFormModel Modelo { get; set; } = new();
+
+    [Parameter]
+    public IEnumerable<Proceso> Procesos { get; set; } = [];
+
+    private EventCallback<TipologiaFormModel> OnSubmit
+        => EventCallback.Factory.Create<TipologiaFormModel>(this, Guardar);
+
+    private void Guardar(TipologiaFormModel _)
+    {
+        DialogService.Close(Modelo);
+    }
+
+    private void Cancelar()
+    {
+        DialogService.Close(null);
+    }
+}

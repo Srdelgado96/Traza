@@ -1,0 +1,117 @@
+@using Traza.Web.Data.Entidades
+@inject DialogService DialogService
+
+<div class="p-3">
+    <div class="row g-3 detail-summary-grid">
+        <div class="col-md-6">
+            <div class="detail-summary-card">
+                <div class="detail-label">Fecha de creación</div>
+                <div class="detail-value">@Incidencia.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="detail-summary-card">
+                <div class="detail-label">Estado</div>
+                <div class="detail-value">@Incidencia.Estado.Nombre</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="detail-summary-card">
+                <div class="detail-label">Proceso</div>
+                <div class="detail-value">@Incidencia.Proceso.Nombre</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="detail-summary-card">
+                <div class="detail-label">Tipología</div>
+                <div class="detail-value">@(Incidencia.Tipologia?.Nombre ?? "-")</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="detail-summary-card">
+                <div class="detail-label">Detector</div>
+                <div class="detail-value">@Incidencia.Detector.Nombre</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="detail-summary-card">
+                <div class="detail-label">Coordinador</div>
+                <div class="detail-value">@(Incidencia.Coordinador?.Nombre ?? "-")</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-section mt-4">
+        <div class="detail-label">Descripción</div>
+        <div class="detail-value">@Incidencia.Descripcion</div>
+    </div>
+
+    <RadzenTabs Class="mt-4">
+        <Tabs>
+            <RadzenTabsItem Text="Detalle">
+                <div class="detail-grid-empty-wrapper">
+                    <RadzenDataGrid Data="@Incidencia.Detalles" TItem="DetalleIncidencia" EmptyText="No hay detalles registrados.">
+                        <Columns>
+                            <RadzenDataGridColumn TItem="DetalleIncidencia" Property="Referencia" Title="Referencia" />
+                            <RadzenDataGridColumn TItem="DetalleIncidencia" Property="Lote" Title="Lote" />
+                            <RadzenDataGridColumn TItem="DetalleIncidencia" Title="Estado">
+                                <Template Context="item">@item.Estado.Nombre</Template>
+                            </RadzenDataGridColumn>
+                            <RadzenDataGridColumn TItem="DetalleIncidencia" Property="Cantidad" Title="Cantidad" />
+                        </Columns>
+                    </RadzenDataGrid>
+                </div>
+            </RadzenTabsItem>
+            <RadzenTabsItem Text="Tareas">
+                <RadzenDataGrid Data="@Incidencia.Tareas" TItem="TareaIncidencia" EmptyText="No hay tareas registradas.">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="TareaIncidencia" Property="Tarea" Title="Tarea" />
+                        <RadzenDataGridColumn TItem="TareaIncidencia" Title="Asignado">
+                            <Template Context="item">@item.UsuarioAsignado.Nombre</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="TareaIncidencia" Property="FechaFinEsperada" Title="Fecha objetivo" FormatString="{0:dd/MM/yyyy}" />
+                        <RadzenDataGridColumn TItem="TareaIncidencia" Title="Cerrada">
+                            <Template Context="item">@(item.Cerrada ? "Sí" : "No")</Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenTabsItem>
+            <RadzenTabsItem Text="Comentarios">
+                <RadzenDataGrid Data="@Incidencia.Comentarios" TItem="ComentarioIncidencia" EmptyText="No hay comentarios registrados.">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="ComentarioIncidencia" Title="Usuario">
+                            <Template Context="item">@item.Usuario.Nombre</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="ComentarioIncidencia" Property="Fecha" Title="Fecha" FormatString="{0:dd/MM/yyyy HH:mm}" />
+                        <RadzenDataGridColumn TItem="ComentarioIncidencia" Property="Contenido" Title="Comentario" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenTabsItem>
+            <RadzenTabsItem Text="Documentos">
+                <RadzenDataGrid Data="@Incidencia.Documentos" TItem="DocumentoIncidencia" EmptyText="No hay documentos registrados.">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="DocumentoIncidencia" Property="Titulo" Title="Título" />
+                        <RadzenDataGridColumn TItem="DocumentoIncidencia" Title="Tipo">
+                            <Template Context="item">@item.TipoAdjunto.Nombre</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="DocumentoIncidencia" Property="NombreArchivo" Title="Archivo" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+
+    <div class="d-flex justify-content-end mt-4">
+        <RadzenButton Text="Cerrar" ButtonStyle="ButtonStyle.Light" Click="@Cerrar" />
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Incidencia Incidencia { get; set; } = null!;
+
+    private void Cerrar()
+    {
+        DialogService.Close();
+    }
+}
