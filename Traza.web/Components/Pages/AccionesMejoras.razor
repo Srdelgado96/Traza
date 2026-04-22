@@ -146,8 +146,15 @@ else
         await RecargarAsync();
     }
 
-    private void AbrirNuevoAsync()
+    private async Task AbrirNuevoAsync()
     {
-        NotificationService.Notify(NotificationSeverity.Info, "Alta pendiente", "El formulario de nueva accion de mejora sera el siguiente paso de esta pantalla.");
+        var creado = await DialogService.OpenAsync<AccionMejoraCreacionDialog>(
+            "Nueva accion de mejora",
+            options: new DialogOptions { Width = "1180px", Height = "860px", CloseDialogOnOverlayClick = true });
+
+        if (creado == true)
+        {
+            await RecargarAsync();
+        }
     }
 }

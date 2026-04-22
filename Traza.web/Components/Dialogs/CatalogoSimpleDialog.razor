@@ -9,6 +9,14 @@
             <RadzenRequiredValidator Component="Nombre" Text="El nombre es obligatorio." Popup="false" />
         </div>
 
+        @if (MostrarDescripcion)
+        {
+            <div class="mb-3">
+                <label class="form-label">Descripcion</label>
+                <RadzenTextArea @bind-Value="Modelo.Descripcion" Rows="3" Style="width:100%;" />
+            </div>
+        }
+
         @if (MostrarOrden)
         {
             <div class="mb-3">
@@ -23,6 +31,14 @@
             <div class="form-check mb-4">
                 <input class="form-check-input" type="checkbox" id="esCierreDialog" @bind="Modelo.EsCierre" />
                 <label class="form-check-label" for="esCierreDialog">Es estado de cierre</label>
+            </div>
+        }
+
+        @if (MostrarActivo)
+        {
+            <div class="form-check mb-4">
+                <input class="form-check-input" type="checkbox" id="activoDialog" @bind="Modelo.Activo" />
+                <label class="form-check-label" for="activoDialog">Activo</label>
             </div>
         }
 
@@ -45,6 +61,12 @@
 
     [Parameter]
     public bool MostrarEsCierre { get; set; }
+
+    [Parameter]
+    public bool MostrarDescripcion { get; set; }
+
+    [Parameter]
+    public bool MostrarActivo { get; set; }
 
     private EventCallback<CatalogoSimpleFormModel> OnSubmit
         => EventCallback.Factory.Create<CatalogoSimpleFormModel>(this, Guardar);

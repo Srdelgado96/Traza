@@ -309,6 +309,31 @@ else
                             </Columns>
                         </RadzenDataGrid>
                     </RadzenTabsItem>
+
+                    <RadzenTabsItem Text="Roles">
+                        @RenderHeader("Roles", AbrirNuevoRolAsync)
+                        <RadzenDataGrid @ref="gridRoles" Data="@roles" TItem="Rol" EditMode="DataGridEditMode.Single" AllowPaging="true" PageSize="8" EmptyText="No hay roles.">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="Rol" Property="Nombre" Title="Nombre">
+                                    <EditTemplate Context="item">
+                                        <RadzenTextBox @bind-Value="item.Nombre" Style="width:100%;" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="Rol" Property="Descripcion" Title="Descripcion">
+                                    <EditTemplate Context="item">
+                                        <RadzenTextArea @bind-Value="item.Descripcion" Rows="2" Style="width:100%;" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="Rol" Title="Activo" Width="120px">
+                                    <Template Context="item">@(item.Activo ? "Si" : "No")</Template>
+                                    <EditTemplate Context="item">
+                                        <RadzenCheckBox @bind-Value="item.Activo" TValue="bool" />
+                                    </EditTemplate>
+                                </RadzenDataGridColumn>
+                                @RenderActionsColumn(gridRoles, "acciones", (Rol item) => EditarFilaAsync(gridRoles, item), (Rol item) => GuardarFilaAsync(gridRoles, item), (Rol item) => CancelarEdicionAsync(gridRoles, item), (Rol item) => EliminarEntidadAsync<Rol>(item.Id, "Eliminar rol", "El rol se eliminara si no esta asignado a usuarios."))
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenTabsItem>
                 </Tabs>
             </RadzenTabs>
             </div>
@@ -334,6 +359,7 @@ else
     private RadzenDataGrid<EstadoProyecto>? gridEstadosProyecto;
     private RadzenDataGrid<PrioridadProyecto>? gridPrioridadesProyecto;
     private RadzenDataGrid<EstadoFaseProyecto>? gridEstadosFase;
+    private RadzenDataGrid<Rol>? gridRoles;
 
     private List<Departamento> departamentos = [];
     private List<Proceso> procesos = [];
@@ -350,6 +376,7 @@ else
     private List<EstadoProyecto> estadosProyecto = [];
     private List<PrioridadProyecto> prioridadesProyecto = [];
     private List<EstadoFaseProyecto> estadosFaseProyecto = [];
+    private List<Rol> roles = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -376,6 +403,7 @@ else
         estadosProyecto = await db.EstadosProyecto.AsNoTracking().OrderBy(x => x.Orden).ThenBy(x => x.Nombre).ToListAsync();
         prioridadesProyecto = await db.PrioridadesProyecto.AsNoTracking().OrderBy(x => x.Orden).ThenBy(x => x.Nombre).ToListAsync();
         estadosFaseProyecto = await db.EstadosFaseProyecto.AsNoTracking().OrderBy(x => x.Orden).ThenBy(x => x.Nombre).ToListAsync();
+        roles = await db.Roles.AsNoTracking().OrderBy(x => x.Nombre).ToListAsync();
     }
 
     private RenderFragment RenderHeader(string titulo, Func<Task> onAdd) => @<div class="table-toolbar">
@@ -474,6 +502,7 @@ else
     private async Task AbrirNuevoEstadoAccionAsync() => await AbrirDialogoSimpleYCrearAsync<EstadoAccionMejora>("Nuevo estado de accion", mostrarOrden: true, mostrarEsCierre: true);
     private async Task AbrirNuevoEstadoProyectoAsync() => await AbrirDialogoSimpleYCrearAsync<EstadoProyecto>("Nuevo estado de proyecto", mostrarOrden: true, mostrarEsCierre: true);
     private async Task AbrirNuevoEstadoFaseAsync() => await AbrirDialogoSimpleYCrearAsync<EstadoFaseProyecto>("Nuevo estado de fase", mostrarOrden: true, mostrarEsCierre: true);
+    private async Task AbrirNuevoRolAsync() => await AbrirDialogoSimpleYCrearAsync<Rol>("Nuevo rol", mostrarDescripcion: true, mostrarActivo: true);
 
     private async Task AbrirNuevaTipologiaAsync()
     {
@@ -509,7 +538,7 @@ else
         await RecargarTodoAsync();
     }
 
-    private async Task AbrirDialogoSimpleYCrearAsync<TItem>(string titulo, bool mostrarOrden = false, bool mostrarEsCierre = false) where TItem : class, new()
+    private async Task AbrirDialogoSimpleYCrearAsync<TItem>(string titulo, bool mostrarOrden = false, bool mostrarEsCierre = false, bool mostrarDescripcion = false, bool mostrarActivo = false) where TItem : class, new()
     {
         var modelo = new CatalogoSimpleFormModel();
         if (mostrarOrden)
@@ -523,7 +552,9 @@ else
             {
                 [nameof(CatalogoSimpleDialog.Modelo)] = modelo,
                 [nameof(CatalogoSimpleDialog.MostrarOrden)] = mostrarOrden,
-                [nameof(CatalogoSimpleDialog.MostrarEsCierre)] = mostrarEsCierre
+                [nameof(CatalogoSimpleDialog.MostrarEsCierre)] = mostrarEsCierre,
+                [nameof(CatalogoSimpleDialog.MostrarDescripcion)] = mostrarDescripcion,
+                [nameof(CatalogoSimpleDialog.MostrarActivo)] = mostrarActivo
             },
             new DialogOptions { Width = "480px", CloseDialogOnOverlayClick = true });
 
@@ -627,6 +658,14 @@ else
     {
         switch (item)
         {
+            case Rol rol:
+                if (string.IsNullOrWhiteSpace(rol.Nombre))
+                {
+                    MostrarAviso("El nombre es obligatorio.");
+                    return false;
+                }
+
+                return true;
             case TipologiaIncidencia tipologia:
                 if (string.IsNullOrWhiteSpace(tipologia.Nombre))
                 {
@@ -685,8 +724,10 @@ else
     private static void AplicarFormularioSimple<TItem>(TItem entidad, CatalogoSimpleFormModel formulario) where TItem : class
     {
         typeof(TItem).GetProperty("Nombre")?.SetValue(entidad, formulario.Nombre.Trim());
+        typeof(TItem).GetProperty("Descripcion")?.SetValue(entidad, string.IsNullOrWhiteSpace(formulario.Descripcion) ? null : formulario.Descripcion.Trim());
         typeof(TItem).GetProperty("Orden")?.SetValue(entidad, formulario.Orden);
         typeof(TItem).GetProperty("EsCierre")?.SetValue(entidad, formulario.EsCierre);
+        typeof(TItem).GetProperty("Activo")?.SetValue(entidad, formulario.Activo);
     }
 
     private static void CopiarValores<TItem>(TItem origen, TItem destino) where TItem : class
@@ -749,6 +790,11 @@ else
                 y.Nombre = x.Nombre.Trim();
                 y.Orden = x.Orden;
                 y.EsCierre = x.EsCierre;
+                break;
+            case Rol x when destino is Rol y:
+                y.Nombre = x.Nombre.Trim();
+                y.Descripcion = string.IsNullOrWhiteSpace(x.Descripcion) ? null : x.Descripcion.Trim();
+                y.Activo = x.Activo;
                 break;
         }
     }

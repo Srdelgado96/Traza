@@ -1,0 +1,566 @@
+@using Microsoft.EntityFrameworkCore
+@using Traza.Web.Components.Models
+@using Traza.Web.Data
+@using Traza.Web.Data.Entidades
+@using Traza.Web.Services.Documents
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+@inject IDocumentStorageService DocumentStorageService
+
+@if (cargando)
+{
+    <div class="p-4 text-center">
+        <RadzenProgressBarCircular Mode="ProgressBarMode.Indeterminate" />
+        <div class="mt-3 text-muted">Preparando formulario...</div>
+    </div>
+}
+else
+{
+    <RadzenTemplateForm Data="@modelo" Submit="@OnSubmit">
+        <div class="p-3">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Fecha</label>
+                    <RadzenDatePicker @bind-Value="modelo.FechaCreacion" Name="FechaCreacion" DateFormat="dd/MM/yyyy" Style="width:100%;" />
+                    <RadzenRequiredValidator Component="FechaCreacion" Text="La fecha es obligatoria." Popup="false" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Fecha objetivo</label>
+                    <RadzenDatePicker @bind-Value="modelo.FechaObjetivo" DateFormat="dd/MM/yyyy" AllowClear="true" Style="width:100%;" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Estado</label>
+                    <RadzenDropDown Data="@estados"
+                                    Name="Estado"
+                                    TextProperty="Nombre"
+                                    ValueProperty="Id"
+                                    @bind-Value="modelo.EstadoId"
+                                    Style="width:100%;" />
+                    <RadzenRequiredValidator Component="Estado" Text="El estado es obligatorio." Popup="false" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Solicitante</label>
+                    <RadzenDropDown Data="@usuarios"
+                                    Name="Solicitante"
+                                    TextProperty="Nombre"
+                                    ValueProperty="Id"
+                                    @bind-Value="modelo.SolicitanteId"
+                                    Style="width:100%;" />
+                    <RadzenRequiredValidator Component="Solicitante" Text="El solicitante es obligatorio." Popup="false" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Coordinador</label>
+                    <RadzenDropDown Data="@usuarios"
+                                    TextProperty="Nombre"
+                                    ValueProperty="Id"
+                                    @bind-Value="modelo.CoordinadorId"
+                                    AllowClear="true"
+                                    Placeholder="Sin asignar"
+                                    Style="width:100%;" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Incidencia origen</label>
+                    <RadzenDropDown Data="@incidencias"
+                                    TextProperty="DescripcionCorta"
+                                    ValueProperty="Id"
+                                    @bind-Value="modelo.IncidenciaOrigenId"
+                                    AllowClear="true"
+                                    Placeholder="Sin relacion"
+                                    Style="width:100%;" />
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Origen</label>
+                    <RadzenDropDown Data="@origenes"
+                                    TextProperty="Nombre"
+                                    ValueProperty="Id"
+                                    @bind-Value="modelo.OrigenId"
+                                    AllowClear="true"
+                                    Placeholder="Sin origen"
+                                    Style="width:100%;" />
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Tipo de accion</label>
+                    <RadzenDropDown Data="@tiposAccion"
+                                    TextProperty="Nombre"
+                                    ValueProperty="Id"
+                                    @bind-Value="modelo.TipoAccionId"
+                                    AllowClear="true"
+                                    Placeholder="Sin tipo"
+                                    Style="width:100%;" />
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">Descripcion</label>
+                    <RadzenTextArea @bind-Value="modelo.Descripcion" Name="Descripcion" Rows="5" Style="width:100%;" />
+                    <RadzenRequiredValidator Component="Descripcion" Text="La descripcion es obligatoria." Popup="false" />
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">Accion inmediata</label>
+                    <RadzenTextArea @bind-Value="modelo.AccionInmediata" Rows="4" Style="width:100%;" />
+                </div>
+            </div>
+
+            <div class="detail-section mt-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <div class="detail-label mb-1">Tareas</div>
+                        <div class="text-muted small">Puedes arrancar la accion con tareas ya asignadas.</div>
+                    </div>
+                    <RadzenButton Text="Anadir tarea" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@AgregarTarea" />
+                </div>
+
+                @if (modelo.Tareas.Count == 0)
+                {
+                    <div class="text-muted small">Sin tareas iniciales.</div>
+                }
+                else
+                {
+                    @foreach (var tarea in modelo.Tareas)
+                    {
+                        <div class="catalogo-form mb-3">
+                            <div class="row g-3">
+                                <div class="col-md-5">
+                                    <label class="form-label">Tarea</label>
+                                    <RadzenTextBox @bind-Value="tarea.Tarea" Style="width:100%;" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Asignado a</label>
+                                    <RadzenDropDown Data="@usuarios"
+                                                    TextProperty="Nombre"
+                                                    ValueProperty="Id"
+                                                    @bind-Value="tarea.UsuarioAsignadoId"
+                                                    AllowClear="true"
+                                                    Placeholder="Sin asignar"
+                                                    Style="width:100%;" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Fecha objetivo</label>
+                                    <RadzenDatePicker @bind-Value="tarea.FechaFinEsperada" DateFormat="dd/MM/yyyy" AllowClear="true" Style="width:100%;" />
+                                </div>
+                                <div class="col-md-1 d-flex align-items-end justify-content-end">
+                                    <button type="button" class="btn traza-icon-btn traza-icon-btn-danger" @onclick="() => EliminarTarea(tarea)" title="Eliminar tarea">
+                                        <i class="fi fi-rr-trash"></i>
+                                    </button>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="@($"urgente-{GetRowId(tarea)}")" @bind="tarea.EsUrgente" />
+                                        <label class="form-check-label" for="@($"urgente-{GetRowId(tarea)}")">Urgente</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+
+            <div class="detail-section mt-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <div class="detail-label mb-1">Comentarios</div>
+                        <div class="text-muted small">Comentarios de alta o seguimiento inicial.</div>
+                    </div>
+                    <RadzenButton Text="Anadir comentario" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@AgregarComentario" />
+                </div>
+
+                @if (modelo.Comentarios.Count == 0)
+                {
+                    <div class="text-muted small">Sin comentarios iniciales.</div>
+                }
+                else
+                {
+                    @foreach (var comentario in modelo.Comentarios)
+                    {
+                        <div class="catalogo-form mb-3">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Usuario</label>
+                                    <RadzenDropDown Data="@usuarios"
+                                                    TextProperty="Nombre"
+                                                    ValueProperty="Id"
+                                                    @bind-Value="comentario.UsuarioId"
+                                                    AllowClear="true"
+                                                    Placeholder="Sin usuario"
+                                                    Style="width:100%;" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Fecha</label>
+                                    <RadzenDatePicker @bind-Value="comentario.Fecha" DateFormat="dd/MM/yyyy" Style="width:100%;" />
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label">Contenido</label>
+                                    <RadzenTextArea @bind-Value="comentario.Contenido" Rows="3" Style="width:100%;" />
+                                </div>
+                                <div class="col-md-1 d-flex align-items-end justify-content-end">
+                                    <button type="button" class="btn traza-icon-btn traza-icon-btn-danger" @onclick="() => EliminarComentario(comentario)" title="Eliminar comentario">
+                                        <i class="fi fi-rr-trash"></i>
+                                    </button>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="@($"seguimiento-{GetRowId(comentario)}")" @bind="comentario.EsSeguimiento" />
+                                        <label class="form-check-label" for="@($"seguimiento-{GetRowId(comentario)}")">Es comentario de seguimiento</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+
+            <div class="detail-section mt-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <div class="detail-label mb-1">Documentos</div>
+                        <div class="text-muted small">Se registra el metadato del documento; la subida fisica la podemos incorporar despues.</div>
+                    </div>
+                    <RadzenButton Text="Anadir documento" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@AgregarDocumento" />
+                </div>
+
+                @if (modelo.Documentos.Count == 0)
+                {
+                    <div class="text-muted small">Sin documentos iniciales.</div>
+                }
+                else
+                {
+                    @foreach (var documento in modelo.Documentos)
+                    {
+                        <div class="catalogo-form mb-3">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Titulo</label>
+                                    <RadzenTextBox @bind-Value="documento.Titulo" Style="width:100%;" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Tipo</label>
+                                    <RadzenDropDown Data="@tiposAdjunto"
+                                                    TextProperty="Nombre"
+                                                    ValueProperty="Id"
+                                                    @bind-Value="documento.TipoAdjuntoId"
+                                                    AllowClear="true"
+                                                    Placeholder="Sin tipo"
+                                                    Style="width:100%;" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Usuario</label>
+                                    <RadzenDropDown Data="@usuarios"
+                                                    TextProperty="Nombre"
+                                                    ValueProperty="Id"
+                                                    @bind-Value="documento.UsuarioId"
+                                                    AllowClear="true"
+                                                    Placeholder="Sin usuario"
+                                                    Style="width:100%;" />
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end justify-content-end">
+                                    <button type="button" class="btn traza-icon-btn traza-icon-btn-danger" @onclick="() => EliminarDocumento(documento)" title="Eliminar documento">
+                                        <i class="fi fi-rr-trash"></i>
+                                    </button>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Fecha documento</label>
+                                    <RadzenDatePicker @bind-Value="documento.FechaDocumento" DateFormat="dd/MM/yyyy" Style="width:100%;" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Archivo</label>
+                                    <InputFile OnChange="@(args => SeleccionarArchivoDocumentoAsync(documento, args))"
+                                               accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.webp"
+                                               class="form-control" />
+                                    @if (!string.IsNullOrWhiteSpace(documento.NombreArchivo))
+                                    {
+                                        <div class="small text-muted mt-1">@documento.NombreArchivo</div>
+                                    }
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label">Descripcion</label>
+                                    <RadzenTextArea @bind-Value="documento.Descripcion" Rows="2" Style="width:100%;" />
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-4">
+                <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" Click="@Cancelar" />
+                <RadzenButton Text="Crear accion" Icon="save" ButtonType="ButtonType.Submit" IsBusy="@guardando" Disabled="@guardando" />
+            </div>
+        </div>
+    </RadzenTemplateForm>
+}
+
+@code {
+    private readonly AccionMejoraCreacionFormModel modelo = new();
+    private bool cargando = true;
+    private bool guardando;
+    private List<Usuario> usuarios = [];
+    private List<EstadoAccionMejora> estados = [];
+    private List<OrigenAccionMejora> origenes = [];
+    private List<TipoAccionMejora> tiposAccion = [];
+    private List<TipoAdjunto> tiposAdjunto = [];
+    private List<IncidenciaLookupItem> incidencias = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await using var db = await DbContextFactory.CreateDbContextAsync();
+
+            usuarios = await db.Usuarios
+                .AsNoTracking()
+                .Where(x => x.Activo)
+                .OrderBy(x => x.Nombre)
+                .ToListAsync();
+
+            estados = await db.EstadosAccionMejora
+                .AsNoTracking()
+                .OrderBy(x => x.Orden)
+                .ToListAsync();
+
+            origenes = await db.OrigenesAccionMejora
+                .AsNoTracking()
+                .OrderBy(x => x.Nombre)
+                .ToListAsync();
+
+            tiposAccion = await db.TiposAccionMejora
+                .AsNoTracking()
+                .OrderBy(x => x.Nombre)
+                .ToListAsync();
+
+            tiposAdjunto = await db.TiposAdjunto
+                .AsNoTracking()
+                .OrderBy(x => x.Nombre)
+                .ToListAsync();
+
+            var incidenciasBase = await db.Incidencias
+                .AsNoTracking()
+                .OrderByDescending(x => x.FechaCreacion)
+                .Select(x => new { x.Id, x.Descripcion })
+                .ToListAsync();
+
+            incidencias = incidenciasBase
+                .Select(x => new IncidenciaLookupItem
+                {
+                    Id = x.Id,
+                    DescripcionCorta = $"#{x.Id} - {TruncarDescripcion(x.Descripcion)}"
+                })
+                .ToList();
+
+            modelo.SolicitanteId = usuarios.FirstOrDefault()?.Id;
+            modelo.CoordinadorId = usuarios.FirstOrDefault()?.Id;
+            modelo.EstadoId = estados.FirstOrDefault(x => !x.EsCierre)?.Id ?? estados.FirstOrDefault()?.Id;
+            modelo.OrigenId = origenes.FirstOrDefault()?.Id;
+            modelo.TipoAccionId = tiposAccion.FirstOrDefault()?.Id;
+            AgregarTarea();
+            AgregarComentario();
+            cargando = false;
+        }
+        catch (Exception)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "No se pudo abrir", "El formulario de accion de mejora no se pudo preparar.");
+            DialogService.Close(false);
+        }
+    }
+
+    private EventCallback<AccionMejoraCreacionFormModel> OnSubmit
+        => EventCallback.Factory.Create<AccionMejoraCreacionFormModel>(this, GuardarAsync);
+
+    private async Task GuardarAsync()
+    {
+        if (guardando || modelo.SolicitanteId is null || modelo.EstadoId is null)
+        {
+            return;
+        }
+
+        guardando = true;
+        var rutasGuardadas = new List<string>();
+
+        await using var db = await DbContextFactory.CreateDbContextAsync();
+        try
+        {
+            var entidad = new AccionMejora
+            {
+                FechaCreacion = modelo.FechaCreacion,
+                FechaObjetivo = modelo.FechaObjetivo,
+                SolicitanteId = modelo.SolicitanteId.Value,
+                CoordinadorId = modelo.CoordinadorId,
+                EstadoId = modelo.EstadoId.Value,
+                OrigenId = modelo.OrigenId,
+                TipoAccionId = modelo.TipoAccionId,
+                IncidenciaOrigenId = modelo.IncidenciaOrigenId,
+                Descripcion = modelo.Descripcion.Trim(),
+                AccionInmediata = string.IsNullOrWhiteSpace(modelo.AccionInmediata) ? null : modelo.AccionInmediata.Trim(),
+                Cerrada = false,
+                ModificadaEn = DateTime.UtcNow,
+                Tareas = ConstruirTareasValidas(),
+                Comentarios = ConstruirComentariosValidos(),
+                Documentos = await ConstruirDocumentosValidosAsync(rutasGuardadas)
+            };
+
+            db.AccionesMejora.Add(entidad);
+            await db.SaveChangesAsync();
+            NotificationService.Notify(NotificationSeverity.Success, "Accion creada", "La accion de mejora se ha registrado correctamente.");
+            DialogService.Close(true);
+        }
+        catch (InvalidOperationException ex)
+        {
+            guardando = false;
+            await EliminarArchivosGuardadosAsync(rutasGuardadas);
+            NotificationService.Notify(NotificationSeverity.Warning, "Adjunto no valido", ex.Message);
+        }
+        catch (DbUpdateException)
+        {
+            guardando = false;
+            await EliminarArchivosGuardadosAsync(rutasGuardadas);
+            NotificationService.Notify(NotificationSeverity.Error, "No se pudo guardar", "Revisa los datos de la accion e intentalo de nuevo.");
+        }
+    }
+
+    private void Cancelar()
+    {
+        DialogService.Close(false);
+    }
+
+    private void AgregarTarea()
+    {
+        modelo.Tareas.Add(new TareaAccionMejoraFormModel
+        {
+            UsuarioAsignadoId = modelo.CoordinadorId ?? modelo.SolicitanteId
+        });
+    }
+
+    private void EliminarTarea(TareaAccionMejoraFormModel tarea)
+    {
+        modelo.Tareas.Remove(tarea);
+    }
+
+    private void AgregarComentario()
+    {
+        modelo.Comentarios.Add(new ComentarioAccionMejoraFormModel
+        {
+            UsuarioId = modelo.SolicitanteId
+        });
+    }
+
+    private void EliminarComentario(ComentarioAccionMejoraFormModel comentario)
+    {
+        modelo.Comentarios.Remove(comentario);
+    }
+
+    private void AgregarDocumento()
+    {
+        modelo.Documentos.Add(new DocumentoAccionMejoraFormModel
+        {
+            UsuarioId = modelo.SolicitanteId,
+            TipoAdjuntoId = tiposAdjunto.FirstOrDefault()?.Id
+        });
+    }
+
+    private void EliminarDocumento(DocumentoAccionMejoraFormModel documento)
+    {
+        modelo.Documentos.Remove(documento);
+    }
+
+    private List<TareaAccionMejora> ConstruirTareasValidas()
+    {
+        return modelo.Tareas
+            .Where(x => !string.IsNullOrWhiteSpace(x.Tarea) && x.UsuarioAsignadoId is not null)
+            .Select(x => new TareaAccionMejora
+            {
+                UsuarioAsignadoId = x.UsuarioAsignadoId!.Value,
+                Tarea = x.Tarea.Trim(),
+                FechaFinEsperada = x.FechaFinEsperada,
+                EsUrgente = x.EsUrgente,
+                Cerrada = false
+            })
+            .ToList();
+    }
+
+    private List<ComentarioAccionMejora> ConstruirComentariosValidos()
+    {
+        return modelo.Comentarios
+            .Where(x => !string.IsNullOrWhiteSpace(x.Contenido) && x.UsuarioId is not null)
+            .Select(x => new ComentarioAccionMejora
+            {
+                UsuarioId = x.UsuarioId!.Value,
+                Fecha = x.Fecha,
+                Contenido = x.Contenido.Trim(),
+                EsSeguimiento = x.EsSeguimiento
+            })
+            .ToList();
+    }
+
+    private async Task<List<DocumentoAccionMejora>> ConstruirDocumentosValidosAsync(List<string> rutasGuardadas)
+    {
+        var documentos = new List<DocumentoAccionMejora>();
+
+        foreach (var item in modelo.Documentos.Where(x => !string.IsNullOrWhiteSpace(x.Titulo) && x.TipoAdjuntoId is not null && x.UsuarioId is not null && x.Archivo is not null))
+        {
+            var archivo = await DocumentStorageService.SaveAsync(item.Archivo!, "acciones-mejora");
+            rutasGuardadas.Add(archivo.RelativePath);
+
+            documentos.Add(new DocumentoAccionMejora
+            {
+                TipoAdjuntoId = item.TipoAdjuntoId!.Value,
+                UsuarioId = item.UsuarioId!.Value,
+                FechaDocumento = item.FechaDocumento,
+                Titulo = item.Titulo.Trim(),
+                Descripcion = string.IsNullOrWhiteSpace(item.Descripcion) ? null : item.Descripcion.Trim(),
+                NombreArchivo = archivo.OriginalFileName,
+                RutaArchivo = archivo.RelativePath
+            });
+        }
+
+        return documentos;
+    }
+
+    private static string TruncarDescripcion(string descripcion)
+    {
+        if (string.IsNullOrWhiteSpace(descripcion))
+        {
+            return "(sin descripcion)";
+        }
+
+        return descripcion.Length <= 80
+            ? descripcion
+            : $"{descripcion[..80]}...";
+    }
+
+    private static string GetRowId(object item) => item.GetHashCode().ToString();
+
+    private async Task SeleccionarArchivoDocumentoAsync(DocumentoAccionMejoraFormModel documento, InputFileChangeEventArgs args)
+    {
+        var archivo = args.File;
+        documento.Archivo = archivo;
+        documento.NombreArchivo = archivo.Name;
+
+        if (string.IsNullOrWhiteSpace(documento.Titulo))
+        {
+            documento.Titulo = Path.GetFileNameWithoutExtension(archivo.Name);
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task EliminarArchivosGuardadosAsync(IEnumerable<string> rutasGuardadas)
+    {
+        foreach (var ruta in rutasGuardadas)
+        {
+            await DocumentStorageService.DeleteAsync(ruta);
+        }
+    }
+
+    private sealed class IncidenciaLookupItem
+    {
+        public int Id { get; set; }
+        public string DescripcionCorta { get; set; } = string.Empty;
+    }
+}

@@ -1,0 +1,123 @@
+@using Traza.Web.Data.Entidades
+@inject DialogService DialogService
+
+<div class="p-3">
+    <div class="row g-3 detail-summary-grid">
+        <div class="col-md-6">
+            <div class="detail-summary-card">
+                <div class="detail-label">Login</div>
+                <div class="detail-value">@Usuario.Login</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="detail-summary-card">
+                <div class="detail-label">Estado</div>
+                <div class="detail-value">@(Usuario.Activo ? "Activo" : "Inactivo")</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="detail-summary-card">
+                <div class="detail-label">Nombre</div>
+                <div class="detail-value">@Usuario.Nombre</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="detail-summary-card">
+                <div class="detail-label">Email</div>
+                <div class="detail-value">@(string.IsNullOrWhiteSpace(Usuario.Email) ? "-" : Usuario.Email)</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="detail-summary-card">
+                <div class="detail-label">Departamento</div>
+                <div class="detail-value">@(Usuario.Departamento?.Nombre ?? "-")</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="detail-summary-card">
+                <div class="detail-label">Supervisor</div>
+                <div class="detail-value">@(Usuario.Supervisor?.Nombre ?? "-")</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="detail-summary-card">
+                <div class="detail-label">Genero</div>
+                <div class="detail-value">@(string.IsNullOrWhiteSpace(Usuario.Genero) ? "-" : Usuario.Genero)</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="detail-summary-card">
+                <div class="detail-label">Colaboradores</div>
+                <div class="detail-value">@NumeroColaboradores</div>
+            </div>
+        </div>
+        <div class="col-12">
+            <div class="detail-summary-card">
+                <div class="detail-label">Roles</div>
+                <div class="detail-value">@(Roles.Any() ? string.Join(", ", Roles) : "-")</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-section mt-4">
+        <div class="detail-label">Actividad relacionada</div>
+        <div class="row g-3 mt-1">
+            <div class="col-md-3">
+                <div class="detail-summary-card">
+                    <div class="detail-label">Incidencias detectadas</div>
+                    <div class="detail-value">@IncidenciasDetectadas</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="detail-summary-card">
+                    <div class="detail-label">Incidencias coordinadas</div>
+                    <div class="detail-value">@IncidenciasCoordinadas</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="detail-summary-card">
+                    <div class="detail-label">Acciones solicitadas</div>
+                    <div class="detail-value">@AccionesSolicitadas</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="detail-summary-card">
+                    <div class="detail-label">Proyectos coordinados</div>
+                    <div class="detail-value">@ProyectosCoordinados</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-end mt-4">
+        <RadzenButton Text="Cerrar" ButtonStyle="ButtonStyle.Light" Click="@Cerrar" />
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Usuario Usuario { get; set; } = null!;
+
+    [Parameter]
+    public int NumeroColaboradores { get; set; }
+
+    [Parameter]
+    public int IncidenciasDetectadas { get; set; }
+
+    [Parameter]
+    public int IncidenciasCoordinadas { get; set; }
+
+    [Parameter]
+    public int AccionesSolicitadas { get; set; }
+
+    [Parameter]
+    public int ProyectosCoordinados { get; set; }
+
+    [Parameter]
+    public IEnumerable<string> Roles { get; set; } = [];
+
+    private void Cerrar()
+    {
+        DialogService.Close();
+    }
+}

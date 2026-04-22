@@ -11,7 +11,9 @@ public class ApplicationDbContext : DbContext
     }
 
     public DbSet<Departamento> Departamentos => Set<Departamento>();
+    public DbSet<Rol> Roles => Set<Rol>();
     public DbSet<Usuario> Usuarios => Set<Usuario>();
+    public DbSet<UsuarioRol> UsuariosRol => Set<UsuarioRol>();
     public DbSet<Proceso> Procesos => Set<Proceso>();
     public DbSet<TipologiaIncidencia> TipologiasIncidencia => Set<TipologiaIncidencia>();
     public DbSet<EstadoIncidencia> EstadosIncidencia => Set<EstadoIncidencia>();
@@ -63,6 +65,14 @@ public class ApplicationDbContext : DbContext
         {
             entity.ToTable("Departamentos");
             entity.Property(x => x.Nombre).HasMaxLength(100).IsRequired();
+            entity.HasIndex(x => x.Nombre).IsUnique();
+        });
+
+        modelBuilder.Entity<Rol>(entity =>
+        {
+            entity.ToTable("Roles");
+            entity.Property(x => x.Nombre).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.Descripcion).HasMaxLength(500);
             entity.HasIndex(x => x.Nombre).IsUnique();
         });
 
@@ -187,6 +197,20 @@ public class ApplicationDbContext : DbContext
                 .WithMany(x => x.Usuarios)
                 .HasForeignKey(x => x.DepartamentoId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<UsuarioRol>(entity =>
+        {
+            entity.ToTable("UsuariosRol");
+            entity.HasKey(x => new { x.UsuarioId, x.RolId });
+            entity.HasOne(x => x.Usuario)
+                .WithMany(x => x.RolesAsignados)
+                .HasForeignKey(x => x.UsuarioId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.Rol)
+                .WithMany(x => x.UsuariosRol)
+                .HasForeignKey(x => x.RolId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 
@@ -707,6 +731,12 @@ public class ApplicationDbContext : DbContext
             new EstadoFaseProyecto { Id = 4, Nombre = "Stand by", Orden = 4, EsCierre = false },
             new EstadoFaseProyecto { Id = 5, Nombre = "Cancelado", Orden = 5, EsCierre = true },
             new EstadoFaseProyecto { Id = 6, Nombre = "Terminado", Orden = 6, EsCierre = true });
+
+        modelBuilder.Entity<Rol>().HasData(
+            new Rol { Id = 1, Nombre = "Administrador", Descripcion = "Acceso completo a la aplicacion.", Activo = true },
+            new Rol { Id = 2, Nombre = "Calidad", Descripcion = "Gestion funcional de incidencias y acciones.", Activo = true },
+            new Rol { Id = 3, Nombre = "Proyectos", Descripcion = "Seguimiento y coordinacion de proyectos.", Activo = true },
+            new Rol { Id = 4, Nombre = "Consulta", Descripcion = "Acceso de solo consulta.", Activo = true });
     }
 
     private static void SeedUsuarios(ModelBuilder modelBuilder)
@@ -716,5 +746,12 @@ public class ApplicationDbContext : DbContext
             new Usuario { Id = 2, Login = "rtorres", Nombre = "Rocío Torres", Email = "rtorres@traza.local", DepartamentoId = 2, Activo = true },
             new Usuario { Id = 3, Login = "prodriguez", Nombre = "Pablo Rodríguez", Email = "prodriguez@traza.local", DepartamentoId = 3, Activo = true },
             new Usuario { Id = 4, Login = "mpromero", Nombre = "Mari Paz Romero", Email = "mpromero@traza.local", DepartamentoId = 4, Activo = true });
+
+        modelBuilder.Entity<UsuarioRol>().HasData(
+            new UsuarioRol { UsuarioId = 1, RolId = 1 },
+            new UsuarioRol { UsuarioId = 1, RolId = 3 },
+            new UsuarioRol { UsuarioId = 2, RolId = 2 },
+            new UsuarioRol { UsuarioId = 3, RolId = 4 },
+            new UsuarioRol { UsuarioId = 4, RolId = 4 });
     }
 }

@@ -1,0 +1,150 @@
+@using Traza.Web.Components.Models
+@using Traza.Web.Data.Entidades
+@inject DialogService DialogService
+
+<RadzenTemplateForm Data="@Modelo" Submit="@OnSubmit">
+    <div class="p-3">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Login</label>
+                <RadzenTextBox @bind-Value="Modelo.Login" Name="Login" Style="width:100%;" />
+                <RadzenRequiredValidator Component="Login" Text="El login es obligatorio." Popup="false" />
+            </div>
+
+            <div class="col-md-8">
+                <label class="form-label">Nombre</label>
+                <RadzenTextBox @bind-Value="Modelo.Nombre" Name="Nombre" Style="width:100%;" />
+                <RadzenRequiredValidator Component="Nombre" Text="El nombre es obligatorio." Popup="false" />
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Email</label>
+                <RadzenTextBox @bind-Value="Modelo.Email" Style="width:100%;" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Genero</label>
+                <RadzenDropDown Data="@generos"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                @bind-Value="Modelo.Genero"
+                                AllowClear="true"
+                                Placeholder="Sin genero"
+                                Style="width:100%;" />
+            </div>
+
+            <div class="col-md-3">
+                <div class="form-check mt-4 pt-2">
+                    <input class="form-check-input" type="checkbox" id="usuarioActivoDialog" @bind="Modelo.Activo" />
+                    <label class="form-check-label" for="usuarioActivoDialog">Usuario activo</label>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Departamento</label>
+                <RadzenDropDown Data="@Departamentos"
+                                TextProperty="Nombre"
+                                ValueProperty="Id"
+                                @bind-Value="Modelo.DepartamentoId"
+                                AllowClear="true"
+                                Placeholder="Sin departamento"
+                                Style="width:100%;" />
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Supervisor</label>
+                <RadzenDropDown Data="@Supervisores"
+                                TextProperty="Nombre"
+                                ValueProperty="Id"
+                                @bind-Value="Modelo.SupervisorId"
+                                AllowClear="true"
+                                Placeholder="Sin supervisor"
+                                Style="width:100%;" />
+            </div>
+
+            <div class="col-12">
+                <label class="form-label">Roles</label>
+                @if (!Roles.Any())
+                {
+                    <div class="text-muted small">No hay roles disponibles.</div>
+                }
+                else
+                {
+                    <div class="row g-2">
+                        @foreach (var rol in Roles)
+                        {
+                            <div class="col-md-4">
+                                <div class="catalogo-form h-100">
+                                    <div class="form-check">
+                                        <input class="form-check-input"
+                                               type="checkbox"
+                                               id="@($"rol-{rol.Id}")"
+                                               checked="@Modelo.RolesSeleccionados.Contains(rol.Id)"
+                                               @onchange="@(_ => ToggleRol(rol.Id))" />
+                                        <label class="form-check-label" for="@($"rol-{rol.Id}")">@rol.Nombre</label>
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(rol.Descripcion))
+                                    {
+                                        <div class="small text-muted mt-2">@rol.Descripcion</div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-4">
+            <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" Click="@Cancelar" />
+            <RadzenButton Text="Guardar" Icon="save" ButtonType="ButtonType.Submit" />
+        </div>
+    </div>
+</RadzenTemplateForm>
+
+@code {
+    private static readonly IReadOnlyList<GeneroOption> generos =
+    [
+        new("Masculino", "Masculino"),
+        new("Femenino", "Femenino"),
+        new("No binario", "No binario")
+    ];
+
+    [Parameter]
+    public UsuarioEdicionFormModel Modelo { get; set; } = new();
+
+    [Parameter]
+    public IEnumerable<Departamento> Departamentos { get; set; } = [];
+
+    [Parameter]
+    public IEnumerable<Usuario> Supervisores { get; set; } = [];
+
+    [Parameter]
+    public IEnumerable<Rol> Roles { get; set; } = [];
+
+    private EventCallback<UsuarioEdicionFormModel> OnSubmit
+        => EventCallback.Factory.Create<UsuarioEdicionFormModel>(this, Guardar);
+
+    private void Guardar()
+    {
+        DialogService.Close(Modelo);
+    }
+
+    private void Cancelar()
+    {
+        DialogService.Close(null);
+    }
+
+    private void ToggleRol(int rolId)
+    {
+        if (Modelo.RolesSeleccionados.Contains(rolId))
+        {
+            Modelo.RolesSeleccionados.Remove(rolId);
+            return;
+        }
+
+        Modelo.RolesSeleccionados.Add(rolId);
+    }
+
+    private sealed record GeneroOption(string Text, string Value);
+}

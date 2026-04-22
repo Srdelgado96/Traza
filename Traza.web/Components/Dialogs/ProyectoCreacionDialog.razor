@@ -1,0 +1,530 @@
+@using Microsoft.EntityFrameworkCore
+@using Traza.Web.Components.Models
+@using Traza.Web.Data
+@using Traza.Web.Data.Entidades
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+@if (cargando)
+{
+    <div class="p-4 text-center">
+        <RadzenProgressBarCircular Mode="ProgressBarMode.Indeterminate" />
+        <div class="mt-3 text-muted">Preparando formulario...</div>
+    </div>
+}
+else
+{
+    <RadzenTemplateForm Data="@modelo" Submit="@OnSubmit">
+        <div class="p-3">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Numero</label>
+                    <RadzenNumeric @bind-Value="modelo.Numero" Name="Numero" Style="width:100%;" />
+                    <RadzenRequiredValidator Component="Numero" Text="El numero es obligatorio." Popup="false" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Fecha alta</label>
+                    <RadzenDatePicker @bind-Value="modelo.FechaAlta" Name="FechaAlta" DateFormat="dd/MM/yyyy" Style="width:100%;" />
+                    <RadzenRequiredValidator Component="FechaAlta" Text="La fecha es obligatoria." Popup="false" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Coordinador</label>
+                    <RadzenDropDown Data="@usuarios"
+                                    TextProperty="Nombre"
+                                    ValueProperty="Id"
+                                    @bind-Value="modelo.CoordinadorId"
+                                    AllowClear="true"
+                                    Placeholder="Sin asignar"
+                                    Style="width:100%;" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Estado</label>
+                    <RadzenDropDown Data="@estados"
+                                    Name="Estado"
+                                    TextProperty="Nombre"
+                                    ValueProperty="Id"
+                                    @bind-Value="modelo.EstadoId"
+                                    Style="width:100%;" />
+                    <RadzenRequiredValidator Component="Estado" Text="El estado es obligatorio." Popup="false" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Prioridad</label>
+                    <RadzenDropDown Data="@prioridades"
+                                    Name="Prioridad"
+                                    TextProperty="Nombre"
+                                    ValueProperty="Id"
+                                    @bind-Value="modelo.PrioridadId"
+                                    Style="width:100%;" />
+                    <RadzenRequiredValidator Component="Prioridad" Text="La prioridad es obligatoria." Popup="false" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Area</label>
+                    <RadzenDropDown Data="@areas"
+                                    TextProperty="Nombre"
+                                    ValueProperty="Id"
+                                    @bind-Value="modelo.AreaId"
+                                    AllowClear="true"
+                                    Placeholder="Sin area"
+                                    Style="width:100%;" />
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">Nombre del proyecto</label>
+                    <RadzenTextBox @bind-Value="modelo.Nombre" Name="Nombre" Style="width:100%;" />
+                    <RadzenRequiredValidator Component="Nombre" Text="El nombre es obligatorio." Popup="false" />
+                </div>
+            </div>
+
+            <div class="detail-section mt-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <div class="detail-label mb-1">Objetivos</div>
+                        <div class="text-muted small">Puedes dejar el proyecto con su alcance inicial definido.</div>
+                    </div>
+                    <RadzenButton Text="Anadir objetivo" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@AgregarObjetivo" />
+                </div>
+
+                @if (modelo.Objetivos.Count == 0)
+                {
+                    <div class="text-muted small">Sin objetivos iniciales.</div>
+                }
+                else
+                {
+                    @foreach (var objetivo in modelo.Objetivos)
+                    {
+                        <div class="catalogo-form mb-3">
+                            <div class="row g-3">
+                                <div class="col-md-2">
+                                    <label class="form-label">Orden</label>
+                                    <RadzenNumeric @bind-Value="objetivo.Orden" Style="width:100%;" />
+                                </div>
+                                <div class="col-md-9">
+                                    <label class="form-label">Descripcion</label>
+                                    <RadzenTextArea @bind-Value="objetivo.Descripcion" Rows="2" Style="width:100%;" />
+                                </div>
+                                <div class="col-md-1 d-flex align-items-end justify-content-end">
+                                    <button type="button" class="btn traza-icon-btn traza-icon-btn-danger" @onclick="() => EliminarObjetivo(objetivo)" title="Eliminar objetivo">
+                                        <i class="fi fi-rr-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+
+            <div class="detail-section mt-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <div class="detail-label mb-1">Fases</div>
+                        <div class="text-muted small">Planifica fases y responsables desde el alta.</div>
+                    </div>
+                    <RadzenButton Text="Anadir fase" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@AgregarFase" />
+                </div>
+
+                @if (modelo.Fases.Count == 0)
+                {
+                    <div class="text-muted small">Sin fases iniciales.</div>
+                }
+                else
+                {
+                    @foreach (var fase in modelo.Fases)
+                    {
+                        <div class="catalogo-form mb-3">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Nombre</label>
+                                    <RadzenTextBox @bind-Value="fase.Nombre" Style="width:100%;" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Responsable</label>
+                                    <RadzenDropDown Data="@usuarios"
+                                                    TextProperty="Nombre"
+                                                    ValueProperty="Id"
+                                                    @bind-Value="fase.ResponsableId"
+                                                    AllowClear="true"
+                                                    Placeholder="Sin responsable"
+                                                    Style="width:100%;" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Estado fase</label>
+                                    <RadzenDropDown Data="@estadosFase"
+                                                    TextProperty="Nombre"
+                                                    ValueProperty="Id"
+                                                    @bind-Value="fase.EstadoId"
+                                                    AllowClear="true"
+                                                    Placeholder="Sin estado"
+                                                    Style="width:100%;" />
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end justify-content-end">
+                                    <button type="button" class="btn traza-icon-btn traza-icon-btn-danger" @onclick="() => EliminarFase(fase)" title="Eliminar fase">
+                                        <i class="fi fi-rr-trash"></i>
+                                    </button>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Fecha inicio</label>
+                                    <RadzenDatePicker @bind-Value="fase.FechaInicio" DateFormat="dd/MM/yyyy" AllowClear="true" Style="width:100%;" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Fecha objetivo</label>
+                                    <RadzenDatePicker @bind-Value="fase.FechaObjetivo" DateFormat="dd/MM/yyyy" AllowClear="true" Style="width:100%;" />
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+
+            <div class="detail-section mt-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <div class="detail-label mb-1">Presupuestos</div>
+                        <div class="text-muted small">Permite registrar estimaciones y cifras iniciales.</div>
+                    </div>
+                    <RadzenButton Text="Anadir presupuesto" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@AgregarPresupuesto" />
+                </div>
+
+                @if (modelo.Presupuestos.Count == 0)
+                {
+                    <div class="text-muted small">Sin presupuestos iniciales.</div>
+                }
+                else
+                {
+                    @foreach (var presupuesto in modelo.Presupuestos)
+                    {
+                        <div class="catalogo-form mb-3">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Usuario</label>
+                                    <RadzenDropDown Data="@usuarios"
+                                                    TextProperty="Nombre"
+                                                    ValueProperty="Id"
+                                                    @bind-Value="presupuesto.UsuarioId"
+                                                    AllowClear="true"
+                                                    Placeholder="Sin usuario"
+                                                    Style="width:100%;" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Fecha estimacion</label>
+                                    <RadzenDatePicker @bind-Value="presupuesto.FechaEstimacion" DateFormat="dd/MM/yyyy" AllowClear="true" Style="width:100%;" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Estimado</label>
+                                    <RadzenNumeric @bind-Value="presupuesto.ImporteEstimado" Format="0.00" Style="width:100%;" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Fecha presupuesto</label>
+                                    <RadzenDatePicker @bind-Value="presupuesto.FechaPresupuesto" DateFormat="dd/MM/yyyy" AllowClear="true" Style="width:100%;" />
+                                </div>
+                                <div class="col-md-1 d-flex align-items-end justify-content-end">
+                                    <button type="button" class="btn traza-icon-btn traza-icon-btn-danger" @onclick="() => EliminarPresupuesto(presupuesto)" title="Eliminar presupuesto">
+                                        <i class="fi fi-rr-trash"></i>
+                                    </button>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Presupuestado</label>
+                                    <RadzenNumeric @bind-Value="presupuesto.ImportePresupuestado" Format="0.00" Style="width:100%;" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Fecha real</label>
+                                    <RadzenDatePicker @bind-Value="presupuesto.FechaReal" DateFormat="dd/MM/yyyy" AllowClear="true" Style="width:100%;" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Real</label>
+                                    <RadzenNumeric @bind-Value="presupuesto.ImporteReal" Format="0.00" Style="width:100%;" />
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+
+            <div class="detail-section mt-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <div class="detail-label mb-1">Comentarios</div>
+                        <div class="text-muted small">Notas iniciales para contexto del proyecto.</div>
+                    </div>
+                    <RadzenButton Text="Anadir comentario" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@AgregarComentario" />
+                </div>
+
+                @if (modelo.Comentarios.Count == 0)
+                {
+                    <div class="text-muted small">Sin comentarios iniciales.</div>
+                }
+                else
+                {
+                    @foreach (var comentario in modelo.Comentarios)
+                    {
+                        <div class="catalogo-form mb-3">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Usuario</label>
+                                    <RadzenDropDown Data="@usuarios"
+                                                    TextProperty="Nombre"
+                                                    ValueProperty="Id"
+                                                    @bind-Value="comentario.UsuarioId"
+                                                    AllowClear="true"
+                                                    Placeholder="Sin usuario"
+                                                    Style="width:100%;" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Fecha</label>
+                                    <RadzenDatePicker @bind-Value="comentario.Fecha" DateFormat="dd/MM/yyyy" Style="width:100%;" />
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label">Contenido</label>
+                                    <RadzenTextArea @bind-Value="comentario.Contenido" Rows="3" Style="width:100%;" />
+                                </div>
+                                <div class="col-md-1 d-flex align-items-end justify-content-end">
+                                    <button type="button" class="btn traza-icon-btn traza-icon-btn-danger" @onclick="() => EliminarComentario(comentario)" title="Eliminar comentario">
+                                        <i class="fi fi-rr-trash"></i>
+                                    </button>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="@($"proy-seguimiento-{GetRowId(comentario)}")" @bind="comentario.EsSeguimiento" />
+                                        <label class="form-check-label" for="@($"proy-seguimiento-{GetRowId(comentario)}")">Es comentario de seguimiento</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-4">
+                <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" Click="@Cancelar" />
+                <RadzenButton Text="Crear proyecto" Icon="save" ButtonType="ButtonType.Submit" IsBusy="@guardando" Disabled="@guardando" />
+            </div>
+        </div>
+    </RadzenTemplateForm>
+}
+
+@code {
+    private readonly ProyectoCreacionFormModel modelo = new();
+    private bool cargando = true;
+    private bool guardando;
+    private List<Usuario> usuarios = [];
+    private List<AreaProyecto> areas = [];
+    private List<EstadoProyecto> estados = [];
+    private List<PrioridadProyecto> prioridades = [];
+    private List<EstadoFaseProyecto> estadosFase = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db = await DbContextFactory.CreateDbContextAsync();
+
+        usuarios = await db.Usuarios
+            .AsNoTracking()
+            .Where(x => x.Activo)
+            .OrderBy(x => x.Nombre)
+            .ToListAsync();
+
+        areas = await db.AreasProyecto
+            .AsNoTracking()
+            .OrderBy(x => x.Nombre)
+            .ToListAsync();
+
+        estados = await db.EstadosProyecto
+            .AsNoTracking()
+            .OrderBy(x => x.Orden)
+            .ToListAsync();
+
+        prioridades = await db.PrioridadesProyecto
+            .AsNoTracking()
+            .OrderBy(x => x.Orden)
+            .ToListAsync();
+
+        estadosFase = await db.EstadosFaseProyecto
+            .AsNoTracking()
+            .OrderBy(x => x.Orden)
+            .ToListAsync();
+
+        modelo.Numero = await db.Proyectos.MaxAsync(x => (int?)x.Numero) + 1 ?? 1;
+        modelo.CoordinadorId = usuarios.FirstOrDefault()?.Id;
+        modelo.AreaId = areas.FirstOrDefault()?.Id;
+        modelo.EstadoId = estados.FirstOrDefault(x => !x.EsCierre)?.Id ?? estados.FirstOrDefault()?.Id;
+        modelo.PrioridadId = prioridades.FirstOrDefault()?.Id;
+        AgregarObjetivo();
+        AgregarFase();
+        AgregarComentario();
+        cargando = false;
+    }
+
+    private EventCallback<ProyectoCreacionFormModel> OnSubmit
+        => EventCallback.Factory.Create<ProyectoCreacionFormModel>(this, GuardarAsync);
+
+    private async Task GuardarAsync()
+    {
+        if (guardando || modelo.Numero is null || modelo.EstadoId is null || modelo.PrioridadId is null)
+        {
+            return;
+        }
+
+        guardando = true;
+
+        await using var db = await DbContextFactory.CreateDbContextAsync();
+        var existeNumero = await db.Proyectos.AnyAsync(x => x.Numero == modelo.Numero.Value);
+        if (existeNumero)
+        {
+            guardando = false;
+            NotificationService.Notify(NotificationSeverity.Warning, "Numero ya usado", "El numero del proyecto ya existe. Ajustalo antes de guardar.");
+            return;
+        }
+
+        var entidad = new Proyecto
+        {
+            Numero = modelo.Numero.Value,
+            FechaAlta = modelo.FechaAlta,
+            AreaId = modelo.AreaId,
+            EstadoId = modelo.EstadoId.Value,
+            PrioridadId = modelo.PrioridadId.Value,
+            CoordinadorId = modelo.CoordinadorId,
+            Nombre = modelo.Nombre.Trim(),
+            ModificadoEn = DateTime.UtcNow,
+            Objetivos = ConstruirObjetivosValidos(),
+            Fases = ConstruirFasesValidas(),
+            Presupuestos = ConstruirPresupuestosValidos(),
+            Comentarios = ConstruirComentariosValidos()
+        };
+
+        db.Proyectos.Add(entidad);
+
+        try
+        {
+            await db.SaveChangesAsync();
+            NotificationService.Notify(NotificationSeverity.Success, "Proyecto creado", "El proyecto se ha registrado correctamente.");
+            DialogService.Close(true);
+        }
+        catch (DbUpdateException)
+        {
+            guardando = false;
+            NotificationService.Notify(NotificationSeverity.Error, "No se pudo guardar", "Revisa los datos del proyecto e intentalo de nuevo.");
+        }
+    }
+
+    private void AgregarObjetivo()
+    {
+        modelo.Objetivos.Add(new ObjetivoProyectoFormModel
+        {
+            Orden = modelo.Objetivos.Count + 1
+        });
+    }
+
+    private void EliminarObjetivo(ObjetivoProyectoFormModel objetivo)
+    {
+        modelo.Objetivos.Remove(objetivo);
+    }
+
+    private void AgregarFase()
+    {
+        modelo.Fases.Add(new FaseProyectoFormModel
+        {
+            ResponsableId = modelo.CoordinadorId,
+            EstadoId = estadosFase.FirstOrDefault(x => !x.EsCierre)?.Id ?? estadosFase.FirstOrDefault()?.Id
+        });
+    }
+
+    private void EliminarFase(FaseProyectoFormModel fase)
+    {
+        modelo.Fases.Remove(fase);
+    }
+
+    private void AgregarPresupuesto()
+    {
+        modelo.Presupuestos.Add(new PresupuestoProyectoFormModel
+        {
+            UsuarioId = modelo.CoordinadorId
+        });
+    }
+
+    private void EliminarPresupuesto(PresupuestoProyectoFormModel presupuesto)
+    {
+        modelo.Presupuestos.Remove(presupuesto);
+    }
+
+    private void AgregarComentario()
+    {
+        modelo.Comentarios.Add(new ComentarioProyectoFormModel
+        {
+            UsuarioId = modelo.CoordinadorId
+        });
+    }
+
+    private void EliminarComentario(ComentarioProyectoFormModel comentario)
+    {
+        modelo.Comentarios.Remove(comentario);
+    }
+
+    private List<ObjetivoProyecto> ConstruirObjetivosValidos()
+    {
+        return modelo.Objetivos
+            .Where(x => !string.IsNullOrWhiteSpace(x.Descripcion))
+            .Select((x, indice) => new ObjetivoProyecto
+            {
+                Orden = x.Orden ?? indice + 1,
+                Descripcion = x.Descripcion.Trim()
+            })
+            .ToList();
+    }
+
+    private List<FaseProyecto> ConstruirFasesValidas()
+    {
+        return modelo.Fases
+            .Where(x => !string.IsNullOrWhiteSpace(x.Nombre) && x.EstadoId is not null)
+            .Select(x => new FaseProyecto
+            {
+                Nombre = x.Nombre.Trim(),
+                ResponsableId = x.ResponsableId,
+                EstadoId = x.EstadoId!.Value,
+                FechaInicio = x.FechaInicio,
+                FechaObjetivo = x.FechaObjetivo
+            })
+            .ToList();
+    }
+
+    private List<PresupuestoProyecto> ConstruirPresupuestosValidos()
+    {
+        return modelo.Presupuestos
+            .Where(x => x.UsuarioId is not null && (x.ImporteEstimado.HasValue || x.ImportePresupuestado.HasValue || x.ImporteReal.HasValue))
+            .Select(x => new PresupuestoProyecto
+            {
+                UsuarioId = x.UsuarioId!.Value,
+                FechaEstimacion = x.FechaEstimacion,
+                ImporteEstimado = x.ImporteEstimado ?? 0,
+                FechaPresupuesto = x.FechaPresupuesto,
+                ImportePresupuestado = x.ImportePresupuestado ?? 0,
+                FechaReal = x.FechaReal,
+                ImporteReal = x.ImporteReal ?? 0
+            })
+            .ToList();
+    }
+
+    private List<ComentarioProyecto> ConstruirComentariosValidos()
+    {
+        return modelo.Comentarios
+            .Where(x => !string.IsNullOrWhiteSpace(x.Contenido) && x.UsuarioId is not null)
+            .Select(x => new ComentarioProyecto
+            {
+                UsuarioId = x.UsuarioId!.Value,
+                Fecha = x.Fecha,
+                Contenido = x.Contenido.Trim(),
+                EsSeguimiento = x.EsSeguimiento
+            })
+            .ToList();
+    }
+
+    private void Cancelar()
+    {
+        DialogService.Close(false);
+    }
+
+    private static string GetRowId(object item) => item.GetHashCode().ToString();
+}
