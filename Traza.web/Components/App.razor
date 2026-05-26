@@ -11,19 +11,15 @@
     <script>
         WebFont.load({
             google: { "families": ["Public Sans:300,400,500,600,700"] },
-            custom: {
-                "families": ["Font Awesome 5 Solid", "Font Awesome 5 Regular", "Font Awesome 5 Brands", "simple-line-icons"],
-                urls: ['@Assets["kaiadmin/assets/css/fonts.min.css"]']
-            },
             active: function () {
                 sessionStorage.fonts = true;
             }
         });
     </script>
+    <link rel="stylesheet" href="@Assets["kaiadmin/assets/css/fonts.min.css"]" />
     <link rel="stylesheet" href="@Assets["kaiadmin/assets/css/bootstrap.min.css"]" />
     <link rel="stylesheet" href="@Assets["kaiadmin/assets/css/plugins.min.css"]" />
     <link rel="stylesheet" href="@Assets["kaiadmin/assets/css/kaiadmin.min.css"]" />
-    <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/uicons-regular-rounded/css/uicons-regular-rounded.css" />
     <link rel="stylesheet" href="@Assets["_content/Radzen.Blazor/css/material-base.css"]" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["Traza.Web.styles.css"]" />

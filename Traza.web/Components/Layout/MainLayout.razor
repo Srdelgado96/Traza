@@ -1,4 +1,8 @@
 @inherits LayoutComponentBase
+@using Traza.Web.Components.Dialogs
+@using Traza.Web.Services.Incidencias
+@inject DialogService DialogService
+@inject IncidenciaDialogCoordinator IncidenciaDialogCoordinator
 
 <RadzenHost />
 
@@ -28,63 +32,63 @@
                 <ul class="nav nav-secondary">
                     <li class="nav-item active">
                         <a href="/">
-                            <i class="fi fi-rr-apps"></i>
+                            <i class="icon-grid"></i>
                             <p>Dashboard</p>
                         </a>
                     </li>
 
                     <li class="nav-section">
                         <span class="sidebar-mini-icon">
-                            <i class="fi fi-rr-briefcase"></i>
+                            <i class="icon-briefcase"></i>
                         </span>
                         <h4 class="text-section">Gestion</h4>
                     </li>
 
                     <li class="nav-item">
                         <a href="/incidencias">
-                            <i class="fi fi-rr-triangle-warning"></i>
+                            <i class="icon-exclamation"></i>
                             <p>Gestion de Incidencias</p>
                         </a>
                     </li>
 
                     <li class="nav-item">
                         <a href="/acciones-mejoras">
-                            <i class="fi fi-rr-list-check"></i>
+                            <i class="icon-list"></i>
                             <p>Acciones de Mejoras</p>
                         </a>
                     </li>
 
                     <li class="nav-item">
                         <a href="/proyectos">
-                            <i class="fi fi-rr-workflow-alt"></i>
+                            <i class="icon-organization"></i>
                             <p>Gestion de Proyectos</p>
                         </a>
                     </li>
 
                     <li class="nav-section">
                         <span class="sidebar-mini-icon">
-                            <i class="fi fi-rr-settings-sliders"></i>
+                            <i class="icon-settings"></i>
                         </span>
                         <h4 class="text-section">Sistema</h4>
                     </li>
 
                     <li class="nav-item">
                         <a href="/gestion-tablas-maestras">
-                            <i class="fi fi-rr-table-rows"></i>
+                            <i class="icon-layers"></i>
                             <p>Gestion de tablas maestras</p>
                         </a>
                     </li>
 
                     <li class="nav-item">
                         <a href="/usuarios">
-                            <i class="fi fi-rr-users-alt"></i>
+                            <i class="icon-people"></i>
                             <p>Usuarios</p>
                         </a>
                     </li>
 
                     <li class="nav-item">
                         <a href="/">
-                            <i class="fi fi-rr-time-past"></i>
+                            <i class="icon-clock"></i>
                             <p>Auditoria</p>
                         </a>
                     </li>
@@ -123,10 +127,10 @@
 
                     <ul class="navbar-nav topbar-nav ms-md-auto align-items-center">
                         <li class="nav-item me-2 d-none d-md-block">
-                            <a class="btn btn-primary btn-round" href="/incidencias">
+                            <button type="button" class="btn btn-primary btn-round" @onclick="AbrirSelectorCreacionAsync">
                                 <i class="fas fa-plus me-1"></i>
-                                Nueva incidencia
-                            </a>
+                                Nueva gestion
+                            </button>
                         </li>
                         <li class="nav-item topbar-user dropdown hidden-caret">
                             <a class="dropdown-toggle profile-pic" data-bs-toggle="dropdown" href="#" aria-expanded="false">
@@ -170,9 +174,6 @@
                         <li class="nav-item">
                             <span class="nav-link">SQL Server</span>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="https://www.flaticon.com/uicons" target="_blank" rel="noreferrer">UIcons by Flaticon</a>
-                        </li>
                     </ul>
                 </nav>
                 <div class="copyright ms-auto">
@@ -188,3 +189,10 @@
     <a href="." class="reload">Reload</a>
     <span class="dismiss">×</span>
 </div>
+
+@code {
+    private Task AbrirSelectorCreacionAsync()
+        => DialogService.OpenAsync<CreacionGestionSelectorDialog>(
+            "Nueva gestion",
+            options: new DialogOptions { Width = "920px", Height = "420px", CloseDialogOnOverlayClick = true });
+}

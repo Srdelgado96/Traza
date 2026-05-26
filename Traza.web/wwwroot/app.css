@@ -129,6 +129,13 @@ h1:focus {
     line-height: 1;
 }
 
+.traza-icon-btn svg {
+    width: 1rem;
+    height: 1rem;
+    display: block;
+    fill: currentColor;
+}
+
 .detail-summary-card {
     background: #f7f9fc;
     border: 1px solid #e5ebf2;
@@ -171,6 +178,151 @@ h1:focus {
     gap: 0.75rem;
 }
 
+.traza-wizard {
+    min-width: 0;
+}
+
+.traza-wizard-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.traza-wizard-progress {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1572e8;
+    background: #eaf3ff;
+    border-radius: 999px;
+    padding: 0.4rem 0.8rem;
+}
+
+.traza-wizard-steps {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.traza-wizard-step {
+    border: 1px solid #dfe6ef;
+    border-radius: 14px;
+    background: #fff;
+    color: #1a2035;
+    padding: 0.9rem 1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    text-align: left;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.traza-wizard-step:hover {
+    border-color: #1572e8;
+    box-shadow: 0 10px 24px rgba(21, 114, 232, 0.08);
+    transform: translateY(-1px);
+}
+
+.traza-wizard-step.is-active {
+    border-color: #1572e8;
+    background: #f5f9ff;
+    box-shadow: 0 12px 24px rgba(21, 114, 232, 0.12);
+}
+
+.traza-wizard-step.is-complete .traza-wizard-step-index {
+    background: #31ce36;
+}
+
+.traza-wizard-step-index {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #1572e8;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    flex: 0 0 32px;
+}
+
+.traza-wizard-step-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.traza-wizard-step-title {
+    font-weight: 700;
+    color: #1a2035;
+}
+
+.traza-wizard-step-text {
+    font-size: 0.82rem;
+    color: #6b7a90;
+    line-height: 1.35;
+}
+
+.traza-creation-selector {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 100%;
+}
+
+.traza-creation-selector-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+    align-items: stretch;
+}
+
+.traza-creation-selector-card {
+    border: 1px solid #dfe6ef;
+    border-radius: 16px;
+    background: #fff;
+    min-height: 220px;
+    padding: 1.5rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    text-align: center;
+    color: #1a2035;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.traza-creation-selector-card:hover {
+    transform: translateY(-2px);
+    border-color: #1572e8;
+    box-shadow: 0 16px 28px rgba(21, 114, 232, 0.12);
+}
+
+.traza-creation-selector-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+}
+
+.traza-creation-selector-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.traza-creation-selector-text {
+    font-size: 0.88rem;
+    color: #6b7a90;
+    line-height: 1.5;
+    max-width: 20ch;
+}
+
 .sidebar .nav-item a i,
 .sidebar .nav-section .sidebar-mini-icon i {
     font-size: 1rem;
@@ -180,12 +332,21 @@ h1:focus {
 
 @media (max-width: 768px) {
     .table-toolbar,
-    .page-header {
+    .page-header,
+    .traza-wizard-header {
         flex-direction: column;
         align-items: stretch;
     }
 
     .page-header-actions {
         justify-content: flex-start;
+    }
+
+    .traza-wizard-steps {
+        grid-template-columns: 1fr;
+    }
+
+    .traza-creation-selector-grid {
+        grid-template-columns: 1fr;
     }
 }

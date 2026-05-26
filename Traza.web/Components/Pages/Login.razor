@@ -1,0 +1,74 @@
+@page "/login"
+@layout Traza.Web.Components.Layout.BlankLayout
+@rendermode InteractiveServer
+@inject NavigationManager NavigationManager
+
+<PageTitle>Login | Traza</PageTitle>
+
+<div class="traza-login-page">
+    <div class="traza-login-shell">
+        <section class="traza-login-brand">
+            <div class="traza-login-brand-stack">
+                <img src="img/traza-mark-light.svg" alt="Traza" class="traza-login-mark" />
+                <div class="traza-login-brand-copy">
+                    <h1>Traza</h1>
+                    <p>Gestion industrial de incidencias, mejoras y proyectos.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="traza-login-panel">
+            <div class="traza-login-card">
+                <div class="traza-login-header">
+                    <div class="traza-login-eyebrow">Acceso</div>
+                    <h2>Iniciar sesion</h2>
+                    <p>Introduce tus credenciales para entrar en Traza.</p>
+                </div>
+
+                <form class="traza-login-form">
+                    <div class="traza-login-field">
+                        <label for="login-usuario">Usuario</label>
+                        <input id="login-usuario" type="text" autocomplete="username" placeholder="Usuario" @bind="usuario" />
+                        @if (!string.IsNullOrWhiteSpace(errorUsuario))
+                        {
+                            <span class="traza-login-error">@errorUsuario</span>
+                        }
+                    </div>
+
+                    <div class="traza-login-field">
+                        <label for="login-password">Contrasena</label>
+                        <input id="login-password" type="password" autocomplete="current-password" placeholder="Contrasena" @bind="contrasena" />
+                        @if (!string.IsNullOrWhiteSpace(errorContrasena))
+                        {
+                            <span class="traza-login-error">@errorContrasena</span>
+                        }
+                    </div>
+
+                    <button type="button" class="btn btn-primary btn-lg traza-login-submit" @onclick="IrAlDashboard">
+                        Entrar
+                    </button>
+                </form>
+            </div>
+        </section>
+    </div>
+</div>
+
+@code {
+    private string usuario = string.Empty;
+    private string contrasena = string.Empty;
+    private string? errorUsuario;
+    private string? errorContrasena;
+
+    private void IrAlDashboard()
+    {
+        errorUsuario = string.IsNullOrWhiteSpace(usuario) ? "Introduce el usuario." : null;
+        errorContrasena = string.IsNullOrWhiteSpace(contrasena) ? "Introduce la contrasena." : null;
+
+        if (errorUsuario is not null || errorContrasena is not null)
+        {
+            return;
+        }
+
+        NavigationManager.NavigateTo("/");
+    }
+}

@@ -1,0 +1,191 @@
+.traza-login-page {
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at top left, rgba(21, 114, 232, 0.18), transparent 28%),
+        linear-gradient(135deg, #f3f7fd 0%, #edf2fb 52%, #e7eef9 100%);
+    padding: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.traza-login-shell {
+    width: min(1120px, 100%);
+    min-height: 680px;
+    display: grid;
+    grid-template-columns: minmax(320px, 0.95fr) minmax(420px, 1fr);
+    background: #ffffff;
+    border: 1px solid #dfe6ef;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 28px 60px rgba(26, 32, 53, 0.14);
+}
+
+.traza-login-brand {
+    background:
+        linear-gradient(160deg, rgba(21, 114, 232, 0.3), transparent 45%),
+        linear-gradient(180deg, #1a2035 0%, #11172a 100%);
+    color: #ffffff;
+    padding: 3rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.traza-login-brand-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    width: 100%;
+    text-align: center;
+}
+
+.traza-login-mark {
+    width: min(280px, 72%);
+    height: auto;
+    display: block;
+}
+
+.traza-login-brand-copy h1 {
+    margin: 0 0 0.6rem;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.traza-login-brand-copy p {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.78);
+}
+
+.traza-login-panel {
+    padding: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+}
+
+.traza-login-card {
+    width: min(420px, 100%);
+}
+
+.traza-login-header {
+    margin-bottom: 2rem;
+}
+
+.traza-login-eyebrow {
+    margin-bottom: 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #1572e8;
+}
+
+.traza-login-header h2 {
+    margin: 0 0 0.75rem;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a2035;
+}
+
+.traza-login-header p {
+    margin: 0;
+    color: #6b7a90;
+    line-height: 1.6;
+}
+
+.traza-login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.traza-login-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.traza-login-field label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1a2035;
+}
+
+.traza-login-field input {
+    width: 100%;
+    min-height: 52px;
+    padding: 0.85rem 1rem;
+    border: 1px solid #d7dfeb;
+    border-radius: 12px;
+    background: #ffffff;
+    color: #1a2035;
+    font-size: 1rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.traza-login-field input::placeholder {
+    color: #8a97ac;
+}
+
+.traza-login-field input:focus {
+    outline: none;
+    border-color: #1572e8;
+    box-shadow: 0 0 0 4px rgba(21, 114, 232, 0.12);
+}
+
+.traza-login-error {
+    display: block;
+    margin-top: 0.1rem;
+    color: #e54d5a;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.traza-login-submit {
+    min-height: 52px;
+    margin-top: 0.5rem;
+    border-radius: 12px;
+    font-weight: 700;
+}
+
+@media (max-width: 992px) {
+    .traza-login-page {
+        padding: 1rem;
+    }
+
+    .traza-login-shell {
+        min-height: auto;
+        grid-template-columns: 1fr;
+    }
+
+    .traza-login-brand,
+    .traza-login-panel {
+        padding: 2rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .traza-login-header h2 {
+        font-size: 1.75rem;
+    }
+
+    .traza-login-brand-copy h1 {
+        font-size: 2rem;
+    }
+
+    .traza-login-brand,
+    .traza-login-panel {
+        padding: 1.5rem;
+    }
+
+    .traza-login-mark {
+        width: min(220px, 68%);
+    }
+}

@@ -51,13 +51,13 @@ else
                     <RadzenDataGridColumn TItem="Usuario" Title="Acciones" Width="160px" TextAlign="TextAlign.Center">
                         <Template Context="item">
                             <button type="button" class="btn traza-icon-btn" @onclick="() => AbrirDetalleAsync(item.Id)" title="Ver">
-                                <i class="fi fi-rr-eye"></i>
+                                <i class="fas fa-eye"></i>
                             </button>
                             <button type="button" class="btn traza-icon-btn" @onclick="() => AbrirEdicionAsync(item.Id)" title="Editar">
-                                <i class="fi fi-rr-pencil"></i>
+                                <i class="fas fa-pencil-alt"></i>
                             </button>
                             <button type="button" class="btn traza-icon-btn traza-icon-btn-danger" @onclick="() => EliminarAsync(item.Id)" title="Eliminar">
-                                <i class="fi fi-rr-trash"></i>
+                                <i class="fas fa-trash-alt"></i>
                             </button>
                         </Template>
                     </RadzenDataGridColumn>

@@ -18,346 +18,435 @@
 else
 {
     <RadzenTemplateForm Data="@modelo" Submit="@OnSubmit">
-        <div class="p-3">
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label">Fecha</label>
-                    <RadzenDatePicker @bind-Value="modelo.FechaCreacion" Name="FechaCreacion" DateFormat="dd/MM/yyyy" Style="width:100%;" />
-                    <RadzenRequiredValidator Component="FechaCreacion" Text="La fecha es obligatoria." Popup="false" />
+        <div class="p-3 traza-wizard">
+            <div class="traza-wizard-header mb-4">
+                <div class="traza-wizard-title">
+                    <div class="text-muted small">Completa el formulario paso a paso para abrir la incidencia con el contexto justo.</div>
                 </div>
-
-                <div class="col-md-4">
-                    <label class="form-label">Detector</label>
-                    <RadzenDropDown Data="@usuarios"
-                                    Name="Detector"
-                                    TextProperty="Nombre"
-                                    ValueProperty="Id"
-                                    @bind-Value="modelo.DetectorId"
-                                    Style="width:100%;" />
-                    <RadzenRequiredValidator Component="Detector" Text="El detector es obligatorio." Popup="false" />
-                </div>
-
-                <div class="col-md-4">
-                    <label class="form-label">Coordinador</label>
-                    <RadzenDropDown Data="@usuarios"
-                                    TextProperty="Nombre"
-                                    ValueProperty="Id"
-                                    @bind-Value="modelo.CoordinadorId"
-                                    AllowClear="true"
-                                    Placeholder="Sin asignar"
-                                    Style="width:100%;" />
-                </div>
-
-                <div class="col-md-4">
-                    <label class="form-label">Proceso</label>
-                    <RadzenDropDown Data="@procesos"
-                                    Name="Proceso"
-                                    TextProperty="Nombre"
-                                    ValueProperty="Id"
-                                    Change="@OnProcesoChange"
-                                    @bind-Value="modelo.ProcesoId"
-                                    Style="width:100%;" />
-                    <RadzenRequiredValidator Component="Proceso" Text="El proceso es obligatorio." Popup="false" />
-                </div>
-
-                <div class="col-md-4">
-                    <label class="form-label">Tipologia</label>
-                    <RadzenDropDown Data="@tipologiasDisponibles"
-                                    TextProperty="Nombre"
-                                    ValueProperty="Id"
-                                    @bind-Value="modelo.TipologiaId"
-                                    AllowClear="true"
-                                    Placeholder="Sin tipologia"
-                                    Style="width:100%;" />
-                </div>
-
-                <div class="col-md-4">
-                    <label class="form-label">Estado</label>
-                    <RadzenDropDown Data="@estados"
-                                    Name="Estado"
-                                    TextProperty="Nombre"
-                                    ValueProperty="Id"
-                                    @bind-Value="modelo.EstadoId"
-                                    Style="width:100%;" />
-                    <RadzenRequiredValidator Component="Estado" Text="El estado es obligatorio." Popup="false" />
-                </div>
-
-                <div class="col-12">
-                    <label class="form-label">Descripcion</label>
-                    <RadzenTextArea @bind-Value="modelo.Descripcion" Name="Descripcion" Rows="5" Style="width:100%;" />
-                    <RadzenRequiredValidator Component="Descripcion" Text="La descripcion es obligatoria." Popup="false" />
-                </div>
-
-                <div class="col-12">
-                    <label class="form-label">Accion inmediata</label>
-                    <RadzenTextArea @bind-Value="modelo.AccionInmediata" Rows="4" Style="width:100%;" />
-                </div>
-
-                <div class="col-12">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="generaAccionMejoraDialog" @bind="modelo.GeneraAccionMejora" />
-                        <label class="form-check-label" for="generaAccionMejoraDialog">Genera accion de mejora</label>
-                    </div>
+                <div class="traza-wizard-progress">
+                    Paso @(pasoActual + 1) de @pasos.Count
                 </div>
             </div>
 
-            <div class="detail-section mt-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div>
-                        <div class="detail-label mb-1">Detalle de incidencia</div>
-                        <div class="text-muted small">Lineas de referencia, lote y estado para arrancar la incidencia con contexto.</div>
-                    </div>
-                    <RadzenButton Text="Anadir detalle" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@AgregarDetalle" />
-                </div>
-
-                @if (modelo.Detalles.Count == 0)
+            <div class="traza-wizard-steps mb-4">
+                @for (var i = 0; i < pasos.Count; i++)
                 {
-                    <div class="text-muted small">Sin detalles iniciales.</div>
+                    var indice = i;
+                    var activo = indice == pasoActual;
+                    var completado = indice < pasoActual;
+                    <button type="button"
+                            class="traza-wizard-step @(activo ? "is-active" : null) @(completado ? "is-complete" : null)"
+                            @onclick="() => IrAPaso(indice)">
+                        <span class="traza-wizard-step-index">@(indice + 1)</span>
+                        <span class="traza-wizard-step-copy">
+                            <span class="traza-wizard-step-title">@pasos[indice].Titulo</span>
+                            <span class="traza-wizard-step-text">@pasos[indice].Descripcion</span>
+                        </span>
+                    </button>
                 }
-                else
-                {
-                    @foreach (var detalle in modelo.Detalles)
-                    {
-                        <div class="catalogo-form mb-3">
-                            <div class="row g-3">
-                                <div class="col-md-3">
-                                    <label class="form-label">Referencia</label>
-                                    <RadzenTextBox @bind-Value="detalle.Referencia" Style="width:100%;" />
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">Lote</label>
-                                    <RadzenTextBox @bind-Value="detalle.Lote" Style="width:100%;" />
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">Cantidad</label>
-                                    <RadzenNumeric @bind-Value="detalle.Cantidad" Style="width:100%;" />
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Estado detalle</label>
-                                    <RadzenDropDown Data="@estadosDetalle"
-                                                    TextProperty="Nombre"
-                                                    ValueProperty="Id"
-                                                    @bind-Value="detalle.EstadoId"
-                                                    AllowClear="true"
-                                                    Placeholder="Sin estado"
-                                                    Style="width:100%;" />
-                                </div>
-                                <div class="col-md-2 d-flex align-items-end justify-content-end">
-                                    <button type="button" class="btn traza-icon-btn traza-icon-btn-danger" @onclick="() => EliminarDetalle(detalle)" title="Eliminar detalle">
-                                        <i class="fi fi-rr-trash"></i>
-                                    </button>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Descripcion</label>
-                                    <RadzenTextArea @bind-Value="detalle.Descripcion" Rows="2" Style="width:100%;" />
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Cliente/Proveedor</label>
-                                    <RadzenTextBox @bind-Value="detalle.ClienteProveedor" Style="width:100%;" />
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Tipo documento</label>
-                                    <RadzenDropDown Data="@tiposDocumento"
-                                                    TextProperty="Nombre"
-                                                    ValueProperty="Id"
-                                                    @bind-Value="detalle.TipoDocumentoId"
-                                                    AllowClear="true"
-                                                    Placeholder="Sin tipo"
-                                                    Style="width:100%;" />
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">Doc. ref.</label>
-                                    <RadzenTextBox @bind-Value="detalle.DocumentoReferencia" Style="width:100%;" />
-                                </div>
+            </div>
+
+            @if (pasoActual == 0)
+            {
+                <div class="detail-section">
+                    <div class="detail-label mb-2">Paso 1</div>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Fecha</label>
+                            <RadzenDatePicker @bind-Value="modelo.FechaCreacion" Name="FechaCreacion" DateFormat="dd/MM/yyyy" Style="width:100%;" />
+                            <RadzenRequiredValidator Component="FechaCreacion" Text="La fecha es obligatoria." Popup="false" />
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Detector</label>
+                            <RadzenDropDown Data="@usuarios"
+                                            Name="Detector"
+                                            TextProperty="Nombre"
+                                            ValueProperty="Id"
+                                            @bind-Value="modelo.DetectorId"
+                                            Style="width:100%;" />
+                            <RadzenRequiredValidator Component="Detector" Text="El detector es obligatorio." Popup="false" />
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Coordinador</label>
+                            <RadzenDropDown Data="@usuarios"
+                                            TextProperty="Nombre"
+                                            ValueProperty="Id"
+                                            @bind-Value="modelo.CoordinadorId"
+                                            AllowClear="true"
+                                            Placeholder="Sin asignar"
+                                            Style="width:100%;" />
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Proceso</label>
+                            <RadzenDropDown Data="@procesos"
+                                            Name="Proceso"
+                                            TextProperty="Nombre"
+                                            ValueProperty="Id"
+                                            Change="@OnProcesoChange"
+                                            @bind-Value="modelo.ProcesoId"
+                                            Style="width:100%;" />
+                            <RadzenRequiredValidator Component="Proceso" Text="El proceso es obligatorio." Popup="false" />
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Tipologia</label>
+                            <RadzenDropDown Data="@tipologiasDisponibles"
+                                            TextProperty="Nombre"
+                                            ValueProperty="Id"
+                                            @bind-Value="modelo.TipologiaId"
+                                            AllowClear="true"
+                                            Placeholder="Sin tipologia"
+                                            Style="width:100%;" />
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Estado</label>
+                            <RadzenDropDown Data="@estados"
+                                            Name="Estado"
+                                            TextProperty="Nombre"
+                                            ValueProperty="Id"
+                                            @bind-Value="modelo.EstadoId"
+                                            Style="width:100%;" />
+                            <RadzenRequiredValidator Component="Estado" Text="El estado es obligatorio." Popup="false" />
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Descripcion</label>
+                            <RadzenTextArea @bind-Value="modelo.Descripcion" Name="Descripcion" Rows="5" Style="width:100%;" />
+                            <RadzenRequiredValidator Component="Descripcion" Text="La descripcion es obligatoria." Popup="false" />
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Accion inmediata</label>
+                            <RadzenTextArea @bind-Value="modelo.AccionInmediata" Rows="4" Style="width:100%;" />
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="generaAccionMejoraDialog" @bind="modelo.GeneraAccionMejora" />
+                                <label class="form-check-label" for="generaAccionMejoraDialog">Genera accion de mejora</label>
                             </div>
                         </div>
-                    }
-                }
-            </div>
-
-            <div class="detail-section mt-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div>
-                        <div class="detail-label mb-1">Tareas</div>
-                        <div class="text-muted small">Tareas iniciales para que la incidencia nazca ya repartida.</div>
                     </div>
-                    <RadzenButton Text="Anadir tarea" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@AgregarTarea" />
                 </div>
+            }
+            else if (pasoActual == 1)
+            {
+                <div class="detail-section">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <div class="detail-label mb-1">Paso 2</div>
+                            <div class="text-muted small">Lineas de referencia, lote y estado para arrancar la incidencia con contexto.</div>
+                        </div>
+                        <RadzenButton Text="Anadir detalle" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@AgregarDetalle" />
+                    </div>
 
-                @if (modelo.Tareas.Count == 0)
-                {
-                    <div class="text-muted small">Sin tareas iniciales.</div>
-                }
-                else
-                {
-                    @foreach (var tarea in modelo.Tareas)
+                    @if (modelo.Detalles.Count == 0)
                     {
-                        <div class="catalogo-form mb-3">
+                        <div class="text-muted small">Sin detalles iniciales.</div>
+                    }
+                    else
+                    {
+                        @foreach (var detalle in modelo.Detalles)
+                        {
+                            <div class="catalogo-form mb-3">
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label">Referencia</label>
+                                        <RadzenTextBox @bind-Value="detalle.Referencia" Style="width:100%;" />
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">Lote</label>
+                                        <RadzenTextBox @bind-Value="detalle.Lote" Style="width:100%;" />
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">Cantidad</label>
+                                        <RadzenNumeric @bind-Value="detalle.Cantidad" Style="width:100%;" />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Estado detalle</label>
+                                        <RadzenDropDown Data="@estadosDetalle"
+                                                        TextProperty="Nombre"
+                                                        ValueProperty="Id"
+                                                        @bind-Value="detalle.EstadoId"
+                                                        AllowClear="true"
+                                                        Placeholder="Sin estado"
+                                                        Style="width:100%;" />
+                                    </div>
+                                    <div class="col-md-2 d-flex align-items-end justify-content-end">
+                                        <button type="button" class="btn traza-icon-btn traza-icon-btn-danger" @onclick="() => EliminarDetalle(detalle)" title="Eliminar detalle">
+                                            <i class="icon-trash"></i>
+                                        </button>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Descripcion</label>
+                                        <RadzenTextArea @bind-Value="detalle.Descripcion" Rows="2" Style="width:100%;" />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Cliente/Proveedor</label>
+                                        <RadzenTextBox @bind-Value="detalle.ClienteProveedor" Style="width:100%;" />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Tipo documento</label>
+                                        <RadzenDropDown Data="@tiposDocumento"
+                                                        TextProperty="Nombre"
+                                                        ValueProperty="Id"
+                                                        @bind-Value="detalle.TipoDocumentoId"
+                                                        AllowClear="true"
+                                                        Placeholder="Sin tipo"
+                                                        Style="width:100%;" />
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">Doc. ref.</label>
+                                        <RadzenTextBox @bind-Value="detalle.DocumentoReferencia" Style="width:100%;" />
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            }
+            else if (pasoActual == 2)
+            {
+                <div class="row g-4">
+                    <div class="col-12">
+                        <div class="detail-section">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <div class="detail-label mb-1">Paso 3</div>
+                                    <div class="text-muted small">Tareas iniciales para que la incidencia nazca ya repartida.</div>
+                                </div>
+                                <RadzenButton Text="Anadir tarea" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@AgregarTarea" />
+                            </div>
+
+                            @if (modelo.Tareas.Count == 0)
+                            {
+                                <div class="text-muted small">Sin tareas iniciales.</div>
+                            }
+                            else
+                            {
+                                @foreach (var tarea in modelo.Tareas)
+                                {
+                                    <div class="catalogo-form mb-3">
+                                        <div class="row g-3">
+                                            <div class="col-md-5">
+                                                <label class="form-label">Tarea</label>
+                                                <RadzenTextBox @bind-Value="tarea.Tarea" Style="width:100%;" />
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Asignado a</label>
+                                                <RadzenDropDown Data="@usuarios"
+                                                                TextProperty="Nombre"
+                                                                ValueProperty="Id"
+                                                                @bind-Value="tarea.UsuarioAsignadoId"
+                                                                AllowClear="true"
+                                                                Placeholder="Sin asignar"
+                                                                Style="width:100%;" />
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Fecha objetivo</label>
+                                                <RadzenDatePicker @bind-Value="tarea.FechaFinEsperada" DateFormat="dd/MM/yyyy" AllowClear="true" Style="width:100%;" />
+                                            </div>
+                                            <div class="col-md-1 d-flex align-items-end justify-content-end">
+                                                <button type="button" class="btn traza-icon-btn traza-icon-btn-danger" @onclick="() => EliminarTarea(tarea)" title="Eliminar tarea">
+                                                    <i class="icon-trash"></i>
+                                                </button>
+                                            </div>
+                                            <div class="col-12">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="@($"inc-urgente-{GetRowId(tarea)}")" @bind="tarea.EsUrgente" />
+                                                    <label class="form-check-label" for="@($"inc-urgente-{GetRowId(tarea)}")">Urgente</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="detail-section">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <div class="detail-label mb-1">Comentarios</div>
+                                    <div class="text-muted small">Seguimiento inicial o notas de apertura.</div>
+                                </div>
+                                <RadzenButton Text="Anadir comentario" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@AgregarComentario" />
+                            </div>
+
+                            @if (modelo.Comentarios.Count == 0)
+                            {
+                                <div class="text-muted small">Sin comentarios iniciales.</div>
+                            }
+                            else
+                            {
+                                @foreach (var comentario in modelo.Comentarios)
+                                {
+                                    <div class="catalogo-form mb-3">
+                                        <div class="row g-3">
+                                            <div class="col-md-11">
+                                                <label class="form-label">Contenido</label>
+                                                <RadzenTextArea @bind-Value="comentario.Contenido" Rows="4" Style="width:100%;" Placeholder="Escribe el comentario de apertura o seguimiento..." />
+                                            </div>
+                                            <div class="col-md-1 d-flex align-items-end justify-content-end">
+                                                <button type="button" class="btn traza-icon-btn traza-icon-btn-danger" @onclick="() => EliminarComentario(comentario)" title="Eliminar comentario">
+                                                    <i class="icon-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+            else if (pasoActual == 3)
+            {
+                <div class="row g-4">
+                    <div class="col-12">
+                        <div class="detail-section">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <div class="detail-label mb-1">Paso 4</div>
+                                    <div class="text-muted small">Adjunta documentos y revisa el resumen antes de crear la incidencia.</div>
+                                </div>
+                                <RadzenButton Text="Anadir documento" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@AgregarDocumento" />
+                            </div>
+
+                            @if (modelo.Documentos.Count == 0)
+                            {
+                                <div class="text-muted small">Sin documentos iniciales.</div>
+                            }
+                            else
+                            {
+                                @foreach (var documento in modelo.Documentos)
+                                {
+                                    <div class="catalogo-form mb-3">
+                                        <div class="row g-3">
+                                            <div class="col-md-4">
+                                                <label class="form-label">Titulo</label>
+                                                <RadzenTextBox @bind-Value="documento.Titulo" Style="width:100%;" />
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Tipo</label>
+                                                <RadzenDropDown Data="@tiposAdjunto"
+                                                                TextProperty="Nombre"
+                                                                ValueProperty="Id"
+                                                                @bind-Value="documento.TipoAdjuntoId"
+                                                                AllowClear="true"
+                                                                Placeholder="Sin tipo"
+                                                                Style="width:100%;" />
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Usuario</label>
+                                                <RadzenDropDown Data="@usuarios"
+                                                                TextProperty="Nombre"
+                                                                ValueProperty="Id"
+                                                                @bind-Value="documento.UsuarioId"
+                                                                AllowClear="true"
+                                                                Placeholder="Sin usuario"
+                                                                Style="width:100%;" />
+                                            </div>
+                                            <div class="col-md-2 d-flex align-items-end justify-content-end">
+                                                <button type="button" class="btn traza-icon-btn traza-icon-btn-danger" @onclick="() => EliminarDocumento(documento)" title="Eliminar documento">
+                                                    <i class="icon-trash"></i>
+                                                </button>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Fecha documento</label>
+                                                <RadzenDatePicker @bind-Value="documento.FechaDocumento" DateFormat="dd/MM/yyyy" Style="width:100%;" />
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Archivo</label>
+                                                <InputFile OnChange="@(args => SeleccionarArchivoDocumentoAsync(documento, args))"
+                                                           accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.webp"
+                                                           class="form-control" />
+                                                @if (!string.IsNullOrWhiteSpace(documento.NombreArchivo))
+                                                {
+                                                    <div class="small text-muted mt-1">@documento.NombreArchivo</div>
+                                                }
+                                            </div>
+                                            <div class="col-md-5">
+                                                <label class="form-label">Descripcion</label>
+                                                <RadzenTextArea @bind-Value="documento.Descripcion" Rows="2" Style="width:100%;" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="detail-section">
+                            <div class="detail-label mb-3">Resumen</div>
                             <div class="row g-3">
-                                <div class="col-md-5">
-                                    <label class="form-label">Tarea</label>
-                                    <RadzenTextBox @bind-Value="tarea.Tarea" Style="width:100%;" />
+                                <div class="col-md-3">
+                                    <div class="detail-summary-card">
+                                        <div class="detail-label">Proceso</div>
+                                        <div class="detail-value">@ObtenerProcesoTexto()</div>
+                                    </div>
                                 </div>
                                 <div class="col-md-3">
-                                    <label class="form-label">Asignado a</label>
-                                    <RadzenDropDown Data="@usuarios"
-                                                    TextProperty="Nombre"
-                                                    ValueProperty="Id"
-                                                    @bind-Value="tarea.UsuarioAsignadoId"
-                                                    AllowClear="true"
-                                                    Placeholder="Sin asignar"
-                                                    Style="width:100%;" />
+                                    <div class="detail-summary-card">
+                                        <div class="detail-label">Tipologia</div>
+                                        <div class="detail-value">@ObtenerTipologiaTexto()</div>
+                                    </div>
                                 </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Fecha objetivo</label>
-                                    <RadzenDatePicker @bind-Value="tarea.FechaFinEsperada" DateFormat="dd/MM/yyyy" AllowClear="true" Style="width:100%;" />
+                                <div class="col-md-2">
+                                    <div class="detail-summary-card">
+                                        <div class="detail-label">Detalles</div>
+                                        <div class="detail-value">@modelo.Detalles.Count</div>
+                                    </div>
                                 </div>
-                                <div class="col-md-1 d-flex align-items-end justify-content-end">
-                                    <button type="button" class="btn traza-icon-btn traza-icon-btn-danger" @onclick="() => EliminarTarea(tarea)" title="Eliminar tarea">
-                                        <i class="fi fi-rr-trash"></i>
-                                    </button>
+                                <div class="col-md-2">
+                                    <div class="detail-summary-card">
+                                        <div class="detail-label">Tareas</div>
+                                        <div class="detail-value">@modelo.Tareas.Count</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="detail-summary-card">
+                                        <div class="detail-label">Documentos</div>
+                                        <div class="detail-value">@modelo.Documentos.Count</div>
+                                    </div>
                                 </div>
                                 <div class="col-12">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="@($"inc-urgente-{GetRowId(tarea)}")" @bind="tarea.EsUrgente" />
-                                        <label class="form-check-label" for="@($"inc-urgente-{GetRowId(tarea)}")">Urgente</label>
+                                    <div class="detail-summary-card">
+                                        <div class="detail-label">Descripcion</div>
+                                        <div class="detail-value">@ObtenerDescripcionResumen()</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    }
-                }
-            </div>
-
-            <div class="detail-section mt-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div>
-                        <div class="detail-label mb-1">Comentarios</div>
-                        <div class="text-muted small">Seguimiento inicial o notas de apertura.</div>
                     </div>
-                    <RadzenButton Text="Anadir comentario" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@AgregarComentario" />
+                </div>
+            }
+
+            <div class="d-flex justify-content-between gap-2 mt-4">
+                <div class="d-flex gap-2">
+                    <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" Click="@Cancelar" />
+                    @if (pasoActual > 0)
+                    {
+                        <RadzenButton Text="Anterior" Icon="chevron_left" ButtonStyle="ButtonStyle.Secondary" Click="@PasoAnterior" />
+                    }
                 </div>
 
-                @if (modelo.Comentarios.Count == 0)
-                {
-                    <div class="text-muted small">Sin comentarios iniciales.</div>
-                }
-                else
-                {
-                    @foreach (var comentario in modelo.Comentarios)
+                <div class="d-flex gap-2">
+                    @if (pasoActual < pasos.Count - 1)
                     {
-                        <div class="catalogo-form mb-3">
-                            <div class="row g-3">
-                                <div class="col-md-3">
-                                    <label class="form-label">Usuario</label>
-                                    <RadzenDropDown Data="@usuarios"
-                                                    TextProperty="Nombre"
-                                                    ValueProperty="Id"
-                                                    @bind-Value="comentario.UsuarioId"
-                                                    AllowClear="true"
-                                                    Placeholder="Sin usuario"
-                                                    Style="width:100%;" />
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Fecha</label>
-                                    <RadzenDatePicker @bind-Value="comentario.Fecha" DateFormat="dd/MM/yyyy" Style="width:100%;" />
-                                </div>
-                                <div class="col-md-5">
-                                    <label class="form-label">Contenido</label>
-                                    <RadzenTextArea @bind-Value="comentario.Contenido" Rows="3" Style="width:100%;" />
-                                </div>
-                                <div class="col-md-1 d-flex align-items-end justify-content-end">
-                                    <button type="button" class="btn traza-icon-btn traza-icon-btn-danger" @onclick="() => EliminarComentario(comentario)" title="Eliminar comentario">
-                                        <i class="fi fi-rr-trash"></i>
-                                    </button>
-                                </div>
-                                <div class="col-12">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="@($"inc-seguimiento-{GetRowId(comentario)}")" @bind="comentario.EsSeguimiento" />
-                                        <label class="form-check-label" for="@($"inc-seguimiento-{GetRowId(comentario)}")">Es comentario de seguimiento</label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <RadzenButton Text="Siguiente" Icon="chevron_right" IconPosition="IconPosition.Right" Click="@PasoSiguiente" />
                     }
-                }
-            </div>
-
-            <div class="detail-section mt-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div>
-                        <div class="detail-label mb-1">Documentos</div>
-                        <div class="text-muted small">Se registra la ficha del documento para dejar trazabilidad desde el alta.</div>
-                    </div>
-                    <RadzenButton Text="Anadir documento" Icon="add_circle" ButtonStyle="ButtonStyle.Light" Click="@AgregarDocumento" />
+                    else
+                    {
+                        <RadzenButton Text="Crear incidencia" Icon="save" ButtonType="ButtonType.Submit" IsBusy="@guardando" Disabled="@guardando" />
+                    }
                 </div>
-
-                @if (modelo.Documentos.Count == 0)
-                {
-                    <div class="text-muted small">Sin documentos iniciales.</div>
-                }
-                else
-                {
-                    @foreach (var documento in modelo.Documentos)
-                    {
-                        <div class="catalogo-form mb-3">
-                            <div class="row g-3">
-                                <div class="col-md-4">
-                                    <label class="form-label">Titulo</label>
-                                    <RadzenTextBox @bind-Value="documento.Titulo" Style="width:100%;" />
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Tipo</label>
-                                    <RadzenDropDown Data="@tiposAdjunto"
-                                                    TextProperty="Nombre"
-                                                    ValueProperty="Id"
-                                                    @bind-Value="documento.TipoAdjuntoId"
-                                                    AllowClear="true"
-                                                    Placeholder="Sin tipo"
-                                                    Style="width:100%;" />
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Usuario</label>
-                                    <RadzenDropDown Data="@usuarios"
-                                                    TextProperty="Nombre"
-                                                    ValueProperty="Id"
-                                                    @bind-Value="documento.UsuarioId"
-                                                    AllowClear="true"
-                                                    Placeholder="Sin usuario"
-                                                    Style="width:100%;" />
-                                </div>
-                                <div class="col-md-2 d-flex align-items-end justify-content-end">
-                                    <button type="button" class="btn traza-icon-btn traza-icon-btn-danger" @onclick="() => EliminarDocumento(documento)" title="Eliminar documento">
-                                        <i class="fi fi-rr-trash"></i>
-                                    </button>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Fecha documento</label>
-                                    <RadzenDatePicker @bind-Value="documento.FechaDocumento" DateFormat="dd/MM/yyyy" Style="width:100%;" />
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Archivo</label>
-                                    <InputFile OnChange="@(args => SeleccionarArchivoDocumentoAsync(documento, args))"
-                                               accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.webp"
-                                               class="form-control" />
-                                    @if (!string.IsNullOrWhiteSpace(documento.NombreArchivo))
-                                    {
-                                        <div class="small text-muted mt-1">@documento.NombreArchivo</div>
-                                    }
-                                </div>
-                                <div class="col-md-5">
-                                    <label class="form-label">Descripcion</label>
-                                    <RadzenTextArea @bind-Value="documento.Descripcion" Rows="2" Style="width:100%;" />
-                                </div>
-                            </div>
-                        </div>
-                    }
-                }
-            </div>
-
-            <div class="d-flex justify-content-end gap-2 mt-4">
-                <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" Click="@Cancelar" />
-                <RadzenButton Text="Crear incidencia" Icon="save" ButtonType="ButtonType.Submit" IsBusy="@guardando" Disabled="@guardando" />
             </div>
         </div>
     </RadzenTemplateForm>
@@ -365,8 +454,16 @@ else
 
 @code {
     private readonly IncidenciaCreacionFormModel modelo = new();
+    private readonly List<PasoFormulario> pasos =
+    [
+        new("Datos Generales", "Datos base y descripcion"),
+        new("Referencias", "Referencias y trazabilidad"),
+        new("Tareas", "Tareas y comentarios"),
+        new("Documentos", "Documentos y resumen")
+    ];
     private bool cargando = true;
     private bool guardando;
+    private int pasoActual;
     private List<Usuario> usuarios = [];
     private List<Proceso> procesos = [];
     private List<TipologiaIncidencia> tipologias = [];
@@ -432,6 +529,53 @@ else
 
     private EventCallback<IncidenciaCreacionFormModel> OnSubmit
         => EventCallback.Factory.Create<IncidenciaCreacionFormModel>(this, GuardarAsync);
+
+    private void IrAPaso(int indice)
+    {
+        if (indice < 0 || indice >= pasos.Count)
+        {
+            return;
+        }
+
+        if (indice > pasoActual && !PuedeAvanzarDesdePasoActual())
+        {
+            return;
+        }
+
+        pasoActual = indice;
+    }
+
+    private void PasoAnterior()
+    {
+        if (pasoActual > 0)
+        {
+            pasoActual--;
+        }
+    }
+
+    private void PasoSiguiente()
+    {
+        if (pasoActual < pasos.Count - 1 && PuedeAvanzarDesdePasoActual())
+        {
+            pasoActual++;
+        }
+    }
+
+    private bool PuedeAvanzarDesdePasoActual()
+    {
+        if (pasoActual != 0)
+        {
+            return true;
+        }
+
+        if (modelo.DetectorId is null || modelo.ProcesoId is null || modelo.EstadoId is null || string.IsNullOrWhiteSpace(modelo.Descripcion))
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Faltan datos", "Completa detector, proceso, estado y descripcion antes de continuar.");
+            return false;
+        }
+
+        return true;
+    }
 
     private void OnProcesoChange(object? _)
     {
@@ -591,13 +735,13 @@ else
     private List<ComentarioIncidencia> ConstruirComentariosValidos()
     {
         return modelo.Comentarios
-            .Where(x => !string.IsNullOrWhiteSpace(x.Contenido) && x.UsuarioId is not null)
+            .Where(x => !string.IsNullOrWhiteSpace(x.Contenido) && modelo.DetectorId is not null)
             .Select(x => new ComentarioIncidencia
             {
-                UsuarioId = x.UsuarioId!.Value,
-                Fecha = x.Fecha,
+                UsuarioId = x.UsuarioId ?? modelo.DetectorId!.Value,
+                Fecha = x.Fecha == default ? DateTime.Now : x.Fecha,
                 Contenido = x.Contenido.Trim(),
-                EsSeguimiento = x.EsSeguimiento
+                EsSeguimiento = true
             })
             .ToList();
     }
@@ -631,6 +775,15 @@ else
         DialogService.Close(false);
     }
 
+    private string ObtenerProcesoTexto()
+        => procesos.FirstOrDefault(x => x.Id == modelo.ProcesoId)?.Nombre ?? "Sin proceso";
+
+    private string ObtenerTipologiaTexto()
+        => tipologiasDisponibles.FirstOrDefault(x => x.Id == modelo.TipologiaId)?.Nombre ?? "Sin tipologia";
+
+    private string ObtenerDescripcionResumen()
+        => string.IsNullOrWhiteSpace(modelo.Descripcion) ? "Sin descripcion" : modelo.Descripcion.Trim();
+
     private static string? ValorNuloSiVacio(string? valor)
         => string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
 
@@ -657,4 +810,6 @@ else
             await DocumentStorageService.DeleteAsync(ruta);
         }
     }
+
+    private sealed record PasoFormulario(string Titulo, string Descripcion);
 }

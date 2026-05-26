@@ -412,7 +412,7 @@ else
             <div class="card-category mb-0">Los registros se editan en linea y el alta se realiza desde dialogo.</div>
         </div>
         <button type="button" class="btn traza-icon-btn traza-icon-btn-primary" @onclick="onAdd" title="Nuevo registro">
-            <i class="fi fi-rr-plus"></i>
+            <i class="fas fa-plus"></i>
         </button>
     </div>;
 
@@ -426,18 +426,18 @@ else
         => @<RadzenDataGridColumn TItem="TItem" Title="@title" Width="150px" TextAlign="TextAlign.Center">
             <Template Context="item">
                 <button type="button" class="btn traza-icon-btn" @onclick="() => onEdit(item)" title="Editar">
-                    <i class="fi fi-rr-pencil"></i>
+                    <i class="fas fa-pencil-alt"></i>
                 </button>
                 <button type="button" class="btn traza-icon-btn traza-icon-btn-danger" @onclick="() => onDelete(item)" title="Eliminar">
-                    <i class="fi fi-rr-trash"></i>
+                    <i class="fas fa-trash-alt"></i>
                 </button>
             </Template>
             <EditTemplate Context="item">
                 <button type="button" class="btn traza-icon-btn traza-icon-btn-success" @onclick="() => onSave(item)" title="Guardar">
-                    <i class="fi fi-rr-check"></i>
+                    <i class="fas fa-check"></i>
                 </button>
                 <button type="button" class="btn traza-icon-btn" @onclick="() => onCancel(item)" title="Cancelar">
-                    <i class="fi fi-rr-cross-small"></i>
+                    <i class="fas fa-times"></i>
                 </button>
             </EditTemplate>
         </RadzenDataGridColumn>;

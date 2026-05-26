@@ -4,9 +4,12 @@
 @using Traza.Web.Components.Dialogs
 @using Traza.Web.Data
 @using Traza.Web.Data.Entidades
+@using Traza.Web.Services.Incidencias
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject DialogService DialogService
+@inject IncidenciaDialogCoordinator IncidenciaDialogCoordinator
 @inject NotificationService NotificationService
+@implements IDisposable
 
 <PageTitle>Gestion de Incidencias | Traza</PageTitle>
 
@@ -28,7 +31,7 @@ else
         </div>
         <div class="page-header-actions">
             <button type="button" class="btn btn-primary btn-round" @onclick="AbrirNuevoAsync">
-                <i class="fi fi-rr-plus me-2"></i>
+                <i class="fas fa-plus me-2"></i>
                 Nueva incidencia
             </button>
         </div>
@@ -52,13 +55,13 @@ else
                     <RadzenDataGridColumn TItem="Incidencia" Title="Acciones" Width="150px" TextAlign="TextAlign.Center">
                         <Template Context="item">
                             <button type="button" class="btn traza-icon-btn" @onclick="() => AbrirDetalleAsync(item, false)" title="Ver">
-                                <i class="fi fi-rr-eye"></i>
+                                <i class="fas fa-eye"></i>
                             </button>
                             <button type="button" class="btn traza-icon-btn" @onclick="() => AbrirDetalleAsync(item, true)" title="Editar">
-                                <i class="fi fi-rr-pencil"></i>
+                                <i class="fas fa-pencil-alt"></i>
                             </button>
                             <button type="button" class="btn traza-icon-btn traza-icon-btn-danger" @onclick="() => EliminarAsync(item.Id)" title="Eliminar">
-                                <i class="fi fi-rr-trash"></i>
+                                <i class="fas fa-trash-alt"></i>
                             </button>
                         </Template>
                     </RadzenDataGridColumn>
@@ -74,6 +77,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        IncidenciaDialogCoordinator.IncidenciaCreada += RecargarDesdeDialogoAsync;
         await RecargarAsync();
         cargando = false;
     }
@@ -149,13 +153,17 @@ else
 
     private async Task AbrirNuevoAsync()
     {
-        var creado = await DialogService.OpenAsync<IncidenciaCreacionDialog>(
-            "Nueva incidencia",
-            options: new DialogOptions { Width = "1180px", Height = "860px", CloseDialogOnOverlayClick = true });
+        await IncidenciaDialogCoordinator.AbrirNuevaAsync();
+    }
 
-        if (creado == true)
-        {
-            await RecargarAsync();
-        }
+    private async Task RecargarDesdeDialogoAsync()
+    {
+        await RecargarAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        IncidenciaDialogCoordinator.IncidenciaCreada -= RecargarDesdeDialogoAsync;
     }
 }

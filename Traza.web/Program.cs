@@ -4,7 +4,10 @@ using Radzen;
 using Traza.Web.Configuration;
 using Traza.Web.Components;
 using Traza.Web.Data;
+using Traza.Web.Services.AccionesMejora;
 using Traza.Web.Services.Documents;
+using Traza.Web.Services.Incidencias;
+using Traza.Web.Services.Proyectos;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -24,6 +27,9 @@ builder.Services.AddScoped(sp =>
 builder.Services.AddRadzenComponents();
 builder.Services.Configure<DocumentStorageOptions>(builder.Configuration.GetSection(DocumentStorageOptions.SectionName));
 builder.Services.AddSingleton<IDocumentStorageService, FileSystemDocumentStorageService>();
+builder.Services.AddScoped<IncidenciaDialogCoordinator>();
+builder.Services.AddScoped<AccionMejoraDialogCoordinator>();
+builder.Services.AddScoped<ProyectoDialogCoordinator>();
 
 var app = builder.Build();
 
