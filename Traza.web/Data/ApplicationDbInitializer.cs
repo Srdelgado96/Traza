@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Traza.Web.Data.Entidades;
 
 namespace Traza.Web.Data;
@@ -55,9 +55,9 @@ public static class ApplicationDbInitializer
         {
             dbContext.Roles.AddRange(
             [
-                new Rol { Nombre = "Administrador", Descripcion = "Acceso completo a la aplicacion.", Activo = true },
-                new Rol { Nombre = "Calidad", Descripcion = "Gestion funcional de incidencias y acciones.", Activo = true },
-                new Rol { Nombre = "Proyectos", Descripcion = "Seguimiento y coordinacion de proyectos.", Activo = true },
+                new Rol { Nombre = "Administrador", Descripcion = "Acceso completo a la aplicación.", Activo = true },
+                new Rol { Nombre = "Calidad", Descripcion = "Gestión funcional de incidencias y acciones.", Activo = true },
+                new Rol { Nombre = "Proyectos", Descripcion = "Seguimiento y coordinación de proyectos.", Activo = true },
                 new Rol { Nombre = "Consulta", Descripcion = "Acceso de solo consulta.", Activo = true }
             ]);
 

@@ -1,4 +1,4 @@
-@using Traza.Web.Components.Models
+﻿@using Traza.Web.Components.Models
 @inject DialogService DialogService
 
 <RadzenTemplateForm Data="@Modelo" Submit="@OnSubmit">
@@ -12,7 +12,7 @@
         @if (MostrarDescripcion)
         {
             <div class="mb-3">
-                <label class="form-label">Descripcion</label>
+                <label class="form-label">Descripción</label>
                 <RadzenTextArea @bind-Value="Modelo.Descripcion" Rows="3" Style="width:100%;" />
             </div>
         }

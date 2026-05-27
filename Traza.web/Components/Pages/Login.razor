@@ -12,7 +12,7 @@
                 <img src="img/traza-mark-light.svg" alt="Traza" class="traza-login-mark" />
                 <div class="traza-login-brand-copy">
                     <h1>Traza</h1>
-                    <p>Gestion industrial de incidencias, mejoras y proyectos.</p>
+                    <p>Gestión industrial de incidencias, mejoras y proyectos.</p>
                 </div>
             </div>
         </section>
@@ -21,30 +21,34 @@
             <div class="traza-login-card">
                 <div class="traza-login-header">
                     <div class="traza-login-eyebrow">Acceso</div>
-                    <h2>Iniciar sesion</h2>
+                    <h2>Iniciar sesión</h2>
                     <p>Introduce tus credenciales para entrar en Traza.</p>
                 </div>
 
-                <form class="traza-login-form">
+                @if (!string.IsNullOrWhiteSpace(Mensaje))
+                {
+                    <div class="@MensajeCss" role="alert">@Mensaje</div>
+                }
+
+                <form class="traza-login-form" method="post" action="/account/login">
+                    <AntiforgeryToken />
+                    <input type="hidden" name="returnUrl" value="@ReturnUrl" />
                     <div class="traza-login-field">
                         <label for="login-usuario">Usuario</label>
-                        <input id="login-usuario" type="text" autocomplete="username" placeholder="Usuario" @bind="usuario" />
-                        @if (!string.IsNullOrWhiteSpace(errorUsuario))
-                        {
-                            <span class="traza-login-error">@errorUsuario</span>
-                        }
+                        <input id="login-usuario" name="userName" type="text" autocomplete="username" placeholder="Usuario" />
                     </div>
 
                     <div class="traza-login-field">
-                        <label for="login-password">Contrasena</label>
-                        <input id="login-password" type="password" autocomplete="current-password" placeholder="Contrasena" @bind="contrasena" />
-                        @if (!string.IsNullOrWhiteSpace(errorContrasena))
-                        {
-                            <span class="traza-login-error">@errorContrasena</span>
-                        }
+                        <label for="login-password">Contraseña</label>
+                        <input id="login-password" name="password" type="password" autocomplete="current-password" placeholder="Contraseña" />
                     </div>
 
-                    <button type="button" class="btn btn-primary btn-lg traza-login-submit" @onclick="IrAlDashboard">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="login-recordar" name="rememberMe" value="true" />
+                        <label class="form-check-label" for="login-recordar">Mantener sesión iniciada</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg traza-login-submit">
                         Entrar
                     </button>
                 </form>
@@ -54,21 +58,25 @@
 </div>
 
 @code {
-    private string usuario = string.Empty;
-    private string contrasena = string.Empty;
-    private string? errorUsuario;
-    private string? errorContrasena;
+    [SupplyParameterFromQuery(Name = "error")]
+    private string? Error { get; set; }
 
-    private void IrAlDashboard()
-    {
-        errorUsuario = string.IsNullOrWhiteSpace(usuario) ? "Introduce el usuario." : null;
-        errorContrasena = string.IsNullOrWhiteSpace(contrasena) ? "Introduce la contrasena." : null;
+    [SupplyParameterFromQuery(Name = "passwordSet")]
+    private string? PasswordSet { get; set; }
 
-        if (errorUsuario is not null || errorContrasena is not null)
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    private string? ReturnUrl { get; set; }
+
+    private string? Mensaje
+        => Error switch
         {
-            return;
-        }
+            "required" => "Introduce usuario y contraseña.",
+            "locked" => "La cuenta está bloqueada temporalmente por demasiados intentos.",
+            "invalid" => "Usuario o contraseña incorrectos.",
+            _ when PasswordSet == "1" => "Contraseña establecida. Ya puedes iniciar sesión.",
+            _ => null
+        };
 
-        NavigationManager.NavigateTo("/");
-    }
+    private string MensajeCss
+        => PasswordSet == "1" ? "alert alert-success" : "alert alert-danger";
 }

@@ -1,4 +1,4 @@
-@page "/proyectos"
+﻿@page "/proyectos"
 @rendermode InteractiveServer
 @using Microsoft.EntityFrameworkCore
 @using Traza.Web.Components.Dialogs
@@ -11,7 +11,7 @@
 @inject NotificationService NotificationService
 @implements IDisposable
 
-<PageTitle>Gestion de Proyectos | Traza</PageTitle>
+<PageTitle>Gestión de Proyectos | Traza</PageTitle>
 
 @if (cargando)
 {
@@ -26,7 +26,7 @@ else
 {
     <div class="page-header">
         <div class="page-header-content">
-            <h4 class="page-title">Gestion de Proyectos</h4>
+            <h4 class="page-title">Gestión de Proyectos</h4>
             <div class="text-muted">Vista general de proyectos con acceso al detalle y sus tablas hijas.</div>
         </div>
         <div class="page-header-actions">
@@ -41,9 +41,9 @@ else
         <div class="card-body">
             <RadzenDataGrid Data="@proyectos" TItem="Proyecto" AllowPaging="true" PageSize="10" EmptyText="No hay proyectos registrados.">
                 <Columns>
-                    <RadzenDataGridColumn TItem="Proyecto" Property="Numero" Title="Numero" Width="110px" />
+                    <RadzenDataGridColumn TItem="Proyecto" Property="Numero" Title="Número" Width="110px" />
                     <RadzenDataGridColumn TItem="Proyecto" Property="Nombre" Title="Nombre" />
-                    <RadzenDataGridColumn TItem="Proyecto" Title="Area">
+                    <RadzenDataGridColumn TItem="Proyecto" Title="Área">
                         <Template Context="item">@(item.Area?.Nombre ?? "-")</Template>
                     </RadzenDataGridColumn>
                     <RadzenDataGridColumn TItem="Proyecto" Title="Prioridad">
@@ -118,13 +118,13 @@ else
 
     private async Task EliminarAsync(int id)
     {
-        var confirmacion = await DialogService.Confirm("El proyecto se eliminara junto con sus datos hijos.", "Eliminar proyecto", new ConfirmOptions
+        var confirmación = await DialogService.Confirm("El proyecto se eliminará junto con sus datos hijos.", "Eliminar proyecto", new ConfirmOptions
         {
             OkButtonText = "Eliminar",
             CancelButtonText = "Cancelar"
         });
 
-        if (confirmacion != true)
+        if (confirmación != true)
         {
             return;
         }

@@ -1,4 +1,4 @@
-@using Microsoft.EntityFrameworkCore
+﻿@using Microsoft.EntityFrameworkCore
 @using Traza.Web.Components.Models
 @using Traza.Web.Data
 @using Traza.Web.Data.Entidades
@@ -95,13 +95,13 @@ else
                         </div>
 
                         <div class="col-md-4">
-                            <label class="form-label">Area</label>
+                            <label class="form-label">Área</label>
                             <RadzenDropDown Data="@areas"
                                             TextProperty="Nombre"
                                             ValueProperty="Id"
                                             @bind-Value="modelo.AreaId"
                                             AllowClear="true"
-                                            Placeholder="Sin area"
+                                            Placeholder="Sin área"
                                             Style="width:100%;" />
                         </div>
                     </div>
@@ -133,7 +133,7 @@ else
                                         <RadzenNumeric @bind-Value="objetivo.Orden" Style="width:100%;" />
                                     </div>
                                     <div class="col-md-9">
-                                        <label class="form-label">Descripcion</label>
+                                        <label class="form-label">Descripción</label>
                                         <RadzenTextArea @bind-Value="objetivo.Descripcion" Rows="2" Style="width:100%;" />
                                     </div>
                                     <div class="col-md-1 d-flex align-items-end justify-content-end">
@@ -322,7 +322,7 @@ else
                             <div class="row g-3">
                                 <div class="col-md-3">
                                     <div class="detail-summary-card">
-                                        <div class="detail-label">Numero</div>
+                                        <div class="detail-label">Número</div>
                                         <div class="detail-value">@(modelo.Numero?.ToString() ?? "-")</div>
                                     </div>
                                 </div>
@@ -340,7 +340,7 @@ else
                                 </div>
                                 <div class="col-md-3">
                                     <div class="detail-summary-card">
-                                        <div class="detail-label">Area</div>
+                                        <div class="detail-label">Área</div>
                                         <div class="detail-value">@ObtenerAreaTexto()</div>
                                     </div>
                                 </div>
@@ -482,7 +482,7 @@ else
 
         if (modelo.Numero is null || modelo.EstadoId is null || modelo.PrioridadId is null || string.IsNullOrWhiteSpace(modelo.Nombre))
         {
-            NotificationService.Notify(NotificationSeverity.Warning, "Faltan datos", "Completa numero, estado, prioridad y nombre antes de continuar.");
+            NotificationService.Notify(NotificationSeverity.Warning, "Faltan datos", "Completa número, estado, prioridad y nombre antes de continuar.");
             return false;
         }
 
@@ -503,7 +503,7 @@ else
         if (existeNumero)
         {
             guardando = false;
-            NotificationService.Notify(NotificationSeverity.Warning, "Numero ya usado", "El numero del proyecto ya existe. Ajustalo antes de guardar.");
+            NotificationService.Notify(NotificationSeverity.Warning, "Número ya usado", "El número del proyecto ya existe. Ajustalo antes de guardar.");
             return;
         }
 
@@ -661,7 +661,7 @@ else
         => prioridades.FirstOrDefault(x => x.Id == modelo.PrioridadId)?.Nombre ?? "Sin prioridad";
 
     private string ObtenerAreaTexto()
-        => areas.FirstOrDefault(x => x.Id == modelo.AreaId)?.Nombre ?? "Sin area";
+        => areas.FirstOrDefault(x => x.Id == modelo.AreaId)?.Nombre ?? "Sin área";
 
     private string ObtenerNombreResumen()
         => string.IsNullOrWhiteSpace(modelo.Nombre) ? "Sin nombre" : modelo.Nombre.Trim();

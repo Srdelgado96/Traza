@@ -102,7 +102,7 @@ else
                                             ValueProperty="Id"
                                             @bind-Value="modelo.IncidenciaOrigenId"
                                             AllowClear="true"
-                                            Placeholder="Sin relacion"
+                                            Placeholder="Sin relación"
                                             Style="width:100%;" />
                         </div>
 
@@ -129,13 +129,13 @@ else
                         </div>
 
                         <div class="col-12">
-                            <label class="form-label">Descripcion</label>
+                            <label class="form-label">Descripción</label>
                             <RadzenTextArea @bind-Value="modelo.Descripcion" Name="Descripcion" Rows="5" Style="width:100%;" />
-                            <RadzenRequiredValidator Component="Descripcion" Text="La descripcion es obligatoria." Popup="false" />
+                            <RadzenRequiredValidator Component="Descripcion" Text="La descripción es obligatoria." Popup="false" />
                         </div>
 
                         <div class="col-12">
-                            <label class="form-label">Accion inmediata</label>
+                            <label class="form-label">Acción inmediata</label>
                             <RadzenTextArea @bind-Value="modelo.AccionInmediata" Rows="4" Style="width:100%;" />
                         </div>
                     </div>
@@ -306,7 +306,7 @@ else
                                                 }
                                             </div>
                                             <div class="col-md-5">
-                                                <label class="form-label">Descripcion</label>
+                                                <label class="form-label">Descripción</label>
                                                 <RadzenTextArea @bind-Value="documento.Descripcion" Rows="2" Style="width:100%;" />
                                             </div>
                                         </div>
@@ -346,7 +346,7 @@ else
                                 </div>
                                 <div class="col-12">
                                     <div class="detail-summary-card">
-                                        <div class="detail-label">Descripcion</div>
+                                        <div class="detail-label">Descripción</div>
                                         <div class="detail-value">@ObtenerDescripcionResumen()</div>
                                     </div>
                                 </div>
@@ -384,7 +384,7 @@ else
     private readonly AccionMejoraCreacionFormModel modelo = new();
     private readonly List<PasoFormulario> pasos =
     [
-        new("Datos Generales", "Contexto base y descripcion"),
+        new("Datos Generales", "Contexto base y descripción"),
         new("Tareas", "Trabajo inicial y reparto"),
         new("Comentarios", "Seguimiento de apertura"),
         new("Documentos", "Adjuntos y resumen")
@@ -504,7 +504,7 @@ else
 
         if (modelo.SolicitanteId is null || modelo.EstadoId is null || string.IsNullOrWhiteSpace(modelo.Descripcion))
         {
-            NotificationService.Notify(NotificationSeverity.Warning, "Faltan datos", "Completa solicitante, estado y descripcion antes de continuar.");
+            NotificationService.Notify(NotificationSeverity.Warning, "Faltan datos", "Completa solicitante, estado y descripción antes de continuar.");
             return false;
         }
 
@@ -545,14 +545,14 @@ else
 
             db.AccionesMejora.Add(entidad);
             await db.SaveChangesAsync();
-            NotificationService.Notify(NotificationSeverity.Success, "Accion creada", "La accion de mejora se ha registrado correctamente.");
+            NotificationService.Notify(NotificationSeverity.Success, "Accion creada", "La acción de mejora se ha registrado correctamente.");
             DialogService.Close(true);
         }
         catch (InvalidOperationException ex)
         {
             guardando = false;
             await EliminarArchivosGuardadosAsync(rutasGuardadas);
-            NotificationService.Notify(NotificationSeverity.Warning, "Adjunto no valido", ex.Message);
+            NotificationService.Notify(NotificationSeverity.Warning, "Adjunto no válido", ex.Message);
         }
         catch (DbUpdateException)
         {
@@ -670,13 +670,13 @@ else
         => tiposAccion.FirstOrDefault(x => x.Id == modelo.TipoAccionId)?.Nombre ?? "Sin tipo";
 
     private string ObtenerDescripcionResumen()
-        => string.IsNullOrWhiteSpace(modelo.Descripcion) ? "Sin descripcion" : modelo.Descripcion.Trim();
+        => string.IsNullOrWhiteSpace(modelo.Descripcion) ? "Sin descripción" : modelo.Descripcion.Trim();
 
     private static string TruncarDescripcion(string descripcion)
     {
         if (string.IsNullOrWhiteSpace(descripcion))
         {
-            return "(sin descripcion)";
+            return "(sin descripción)";
         }
 
         return descripcion.Length <= 80

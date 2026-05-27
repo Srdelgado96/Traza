@@ -1,12 +1,18 @@
 @page "/usuarios"
 @rendermode InteractiveServer
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
 @using Microsoft.EntityFrameworkCore
+@using System.Text
 @using Traza.Web.Components.Dialogs
 @using Traza.Web.Components.Models
 @using Traza.Web.Data
 @using Traza.Web.Data.Entidades
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject UserManager<ApplicationUser> UserManager
 @inject DialogService DialogService
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
 @inject NotificationService NotificationService
 
 <PageTitle>Usuarios | Traza</PageTitle>
@@ -25,9 +31,27 @@ else
     <div class="page-header">
         <div class="page-header-content">
             <h4 class="page-title">Usuarios</h4>
-            <div class="text-muted">Vista general de usuarios internos con acceso a consulta, edicion y eliminacion.</div>
+            <div class="text-muted">Vista general de usuarios internos con acceso a consulta, edición y eliminación.</div>
         </div>
+        <button type="button" class="btn btn-primary btn-round" @onclick="CrearAsync">
+            <i class="fas fa-user-plus me-1"></i>
+            Nuevo usuario
+        </button>
     </div>
+
+    @if (!string.IsNullOrWhiteSpace(ultimoEnlaceActivación))
+    {
+        <div class="alert alert-info d-flex flex-column flex-lg-row gap-3 align-items-lg-center justify-content-between">
+            <div>
+                <div class="fw-semibold">Enlace de activación generado</div>
+                <div class="small text-break">@ultimoEnlaceActivación</div>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-primary" @onclick="CopiarUltimoEnlaceAsync">
+                <i class="fas fa-copy me-1"></i>
+                Copiar
+            </button>
+        </div>
+    }
 
     <div class="card card-round">
         <div class="card-body">
@@ -46,15 +70,18 @@ else
                         <Template Context="item">@(item.Supervisor?.Nombre ?? "-")</Template>
                     </RadzenDataGridColumn>
                     <RadzenDataGridColumn TItem="Usuario" Title="Activo" Width="110px">
-                        <Template Context="item">@(item.Activo ? "Si" : "No")</Template>
+                        <Template Context="item">@(item.Activo ? "Sí" : "No")</Template>
                     </RadzenDataGridColumn>
-                    <RadzenDataGridColumn TItem="Usuario" Title="Acciones" Width="160px" TextAlign="TextAlign.Center">
+                    <RadzenDataGridColumn TItem="Usuario" Title="Acciones" Width="190px" TextAlign="TextAlign.Center">
                         <Template Context="item">
                             <button type="button" class="btn traza-icon-btn" @onclick="() => AbrirDetalleAsync(item.Id)" title="Ver">
                                 <i class="fas fa-eye"></i>
                             </button>
                             <button type="button" class="btn traza-icon-btn" @onclick="() => AbrirEdicionAsync(item.Id)" title="Editar">
                                 <i class="fas fa-pencil-alt"></i>
+                            </button>
+                            <button type="button" class="btn traza-icon-btn" @onclick="() => GenerarEnlaceActivaciónAsync(item.Id)" title="Generar enlace de acceso">
+                                <i class="fas fa-key"></i>
                             </button>
                             <button type="button" class="btn traza-icon-btn traza-icon-btn-danger" @onclick="() => EliminarAsync(item.Id)" title="Eliminar">
                                 <i class="fas fa-trash-alt"></i>
@@ -70,6 +97,7 @@ else
 @code {
     private bool cargando = true;
     private List<Usuario> usuarios = [];
+    private string? ultimoEnlaceActivación;
 
     protected override async Task OnInitializedAsync()
     {
@@ -87,6 +115,95 @@ else
             .Include(x => x.RolesAsignados).ThenInclude(x => x.Rol)
             .OrderBy(x => x.Nombre)
             .ToListAsync();
+    }
+
+    private async Task CrearAsync()
+    {
+        await using var db = await DbContextFactory.CreateDbContextAsync();
+        var departamentos = await db.Departamentos.AsNoTracking().OrderBy(x => x.Nombre).ToListAsync();
+        var supervisores = await db.Usuarios.AsNoTracking().OrderBy(x => x.Nombre).ToListAsync();
+        var roles = await db.Roles.AsNoTracking().Where(x => x.Activo).OrderBy(x => x.Nombre).ToListAsync();
+
+        var modelo = new UsuarioEdicionFormModel { Activo = true };
+        var resultado = await DialogService.OpenAsync<UsuarioEdicionDialog>(
+            "Nuevo usuario",
+            new Dictionary<string, object?>
+            {
+                [nameof(UsuarioEdicionDialog.Modelo)] = modelo,
+                [nameof(UsuarioEdicionDialog.Departamentos)] = departamentos,
+                [nameof(UsuarioEdicionDialog.Supervisores)] = supervisores,
+                [nameof(UsuarioEdicionDialog.Roles)] = roles
+            },
+            new DialogOptions { Width = "920px", Height = "700px", CloseDialogOnOverlayClick = true });
+
+        if (resultado is not UsuarioEdicionFormModel nuevo || !ValidarUsuario(nuevo))
+        {
+            return;
+        }
+
+        var login = nuevo.Login.Trim();
+        var email = nuevo.Email?.Trim();
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Revisión requerida", "El email es obligatorio para generar el enlace de activación.");
+            return;
+        }
+
+        if (await UserManager.FindByNameAsync(login) is not null || await UserManager.FindByEmailAsync(email) is not null)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Usuario existente", "Ya existe un usuario de acceso con ese login o email.");
+            return;
+        }
+
+        await using var dbGuardar = await DbContextFactory.CreateDbContextAsync();
+        var entidad = new Usuario
+        {
+            Login = login,
+            Nombre = nuevo.Nombre.Trim(),
+            Email = email,
+            Genero = string.IsNullOrWhiteSpace(nuevo.Genero) ? null : nuevo.Genero.Trim(),
+            DepartamentoId = nuevo.DepartamentoId,
+            SupervisorId = nuevo.SupervisorId,
+            Activo = nuevo.Activo
+        };
+
+        dbGuardar.Usuarios.Add(entidad);
+        foreach (var rolId in nuevo.RolesSeleccionados.Distinct())
+        {
+            dbGuardar.UsuariosRol.Add(new UsuarioRol { Usuario = entidad, RolId = rolId });
+        }
+
+        try
+        {
+            await dbGuardar.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "No se pudo guardar", "Revisa si el login ya existe o si hay datos obligatorios vacíos.");
+            return;
+        }
+
+        var identityUser = new ApplicationUser
+        {
+            UserName = login,
+            Email = email,
+            EmailConfirmed = true,
+            DisplayName = entidad.Nombre,
+            IsActive = entidad.Activo,
+            UsuarioId = entidad.Id
+        };
+
+        var identityResult = await UserManager.CreateAsync(identityUser);
+        if (!identityResult.Succeeded)
+        {
+            await EliminarUsuarioFuncionalAsync(entidad.Id);
+            NotificationService.Notify(NotificationSeverity.Error, "No se pudo crear el acceso", string.Join(" ", identityResult.Errors.Select(x => x.Description)));
+            return;
+        }
+
+        ultimoEnlaceActivación = await CrearEnlaceActivaciónAsync(identityUser);
+        NotificationService.Notify(NotificationSeverity.Success, "Usuario creado", "Copia el enlace de activación y enviaselo al usuario.");
+        await RecargarAsync();
     }
 
     private async Task AbrirDetalleAsync(int id)
@@ -187,24 +304,25 @@ else
         try
         {
             await dbGuardar.SaveChangesAsync();
+            await SincronizarIdentityAsync(entidad);
             NotificationService.Notify(NotificationSeverity.Success, "Guardado", "Usuario actualizado correctamente.");
             await RecargarAsync();
         }
         catch (DbUpdateException)
         {
-            NotificationService.Notify(NotificationSeverity.Error, "No se pudo guardar", "Revisa si el login ya existe o si hay datos obligatorios vacios.");
+            NotificationService.Notify(NotificationSeverity.Error, "No se pudo guardar", "Revisa si el login ya existe o si hay datos obligatorios vacíos.");
         }
     }
 
     private async Task EliminarAsync(int id)
     {
-        var confirmacion = await DialogService.Confirm("El usuario se eliminara si no tiene relaciones activas con incidencias, acciones o proyectos.", "Eliminar usuario", new ConfirmOptions
+        var confirmación = await DialogService.Confirm("El usuario se eliminará si no tiene relaciones activas con incidencias, acciones o proyectos.", "Eliminar usuario", new ConfirmOptions
         {
             OkButtonText = "Eliminar",
             CancelButtonText = "Cancelar"
         });
 
-        if (confirmacion != true)
+        if (confirmación != true)
         {
             return;
         }
@@ -221,12 +339,13 @@ else
         try
         {
             await db.SaveChangesAsync();
+            await DesactivarIdentityAsync(id);
             NotificationService.Notify(NotificationSeverity.Success, "Eliminado", "Usuario eliminado correctamente.");
             await RecargarAsync();
         }
         catch (DbUpdateException)
         {
-            NotificationService.Notify(NotificationSeverity.Warning, "No se pudo eliminar", "Este usuario esta relacionado con otros datos y no se puede borrar.");
+            NotificationService.Notify(NotificationSeverity.Warning, "No se pudo eliminar", "Este usuario está relacionado con otros datos y no se puede borrar.");
         }
     }
 
@@ -245,23 +364,143 @@ else
     {
         if (string.IsNullOrWhiteSpace(usuario.Login))
         {
-            NotificationService.Notify(NotificationSeverity.Warning, "Revision requerida", "El login es obligatorio.");
+            NotificationService.Notify(NotificationSeverity.Warning, "Revisión requerida", "El login es obligatorio.");
             return false;
         }
 
         if (string.IsNullOrWhiteSpace(usuario.Nombre))
         {
-            NotificationService.Notify(NotificationSeverity.Warning, "Revision requerida", "El nombre es obligatorio.");
+            NotificationService.Notify(NotificationSeverity.Warning, "Revisión requerida", "El nombre es obligatorio.");
             return false;
         }
 
         if (usuario.SupervisorId == usuario.Id)
         {
-            NotificationService.Notify(NotificationSeverity.Warning, "Revision requerida", "Un usuario no puede ser su propio supervisor.");
+            NotificationService.Notify(NotificationSeverity.Warning, "Revisión requerida", "Un usuario no puede ser su propio supervisor.");
             return false;
         }
 
         return true;
+    }
+
+    private async Task GenerarEnlaceActivaciónAsync(int usuarioId)
+    {
+        var identityUser = UserManager.Users.FirstOrDefault(x => x.UsuarioId == usuarioId);
+        if (identityUser is null)
+        {
+            identityUser = await CrearCuentaAccesoAsync(usuarioId);
+            if (identityUser is null)
+            {
+                return;
+            }
+        }
+
+        ultimoEnlaceActivación = await CrearEnlaceActivaciónAsync(identityUser);
+        NotificationService.Notify(NotificationSeverity.Info, "Enlace generado", "El enlace de activación está listo para copiar.");
+    }
+
+    private async Task<ApplicationUser?> CrearCuentaAccesoAsync(int usuarioId)
+    {
+        await using var db = await DbContextFactory.CreateDbContextAsync();
+        var usuario = await db.Usuarios.AsNoTracking().FirstOrDefaultAsync(x => x.Id == usuarioId);
+        if (usuario is null)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Usuario no encontrado", "No se encontro el usuario seleccionado.");
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(usuario.Email))
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Email requerido", "El usuario necesita email para crear su cuenta de acceso.");
+            return null;
+        }
+
+        var login = usuario.Login.Trim();
+        var email = usuario.Email.Trim();
+        if (await UserManager.FindByNameAsync(login) is not null || await UserManager.FindByEmailAsync(email) is not null)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Acceso existente", "Ya existe una cuenta de acceso con ese login o email.");
+            return null;
+        }
+
+        var identityUser = new ApplicationUser
+        {
+            UserName = login,
+            Email = email,
+            EmailConfirmed = true,
+            DisplayName = usuario.Nombre,
+            IsActive = usuario.Activo,
+            UsuarioId = usuario.Id
+        };
+
+        var result = await UserManager.CreateAsync(identityUser);
+        if (!result.Succeeded)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "No se pudo crear el acceso", string.Join(" ", result.Errors.Select(x => x.Description)));
+            return null;
+        }
+
+        return identityUser;
+    }
+
+    private async Task<string> CrearEnlaceActivaciónAsync(ApplicationUser identityUser)
+    {
+        var token = await UserManager.GeneratePasswordResetTokenAsync(identityUser);
+        var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+        return NavigationManager.ToAbsoluteUri($"/set-password?userId={Uri.EscapeDataString(identityUser.Id)}&token={encodedToken}").ToString();
+    }
+
+    private async Task SincronizarIdentityAsync(Usuario usuario)
+    {
+        var identityUser = UserManager.Users.FirstOrDefault(x => x.UsuarioId == usuario.Id);
+        if (identityUser is null)
+        {
+            return;
+        }
+
+        identityUser.UserName = usuario.Login;
+        identityUser.Email = usuario.Email;
+        identityUser.EmailConfirmed = !string.IsNullOrWhiteSpace(usuario.Email);
+        identityUser.DisplayName = usuario.Nombre;
+        identityUser.IsActive = usuario.Activo;
+        await UserManager.UpdateAsync(identityUser);
+    }
+
+    private async Task DesactivarIdentityAsync(int usuarioId)
+    {
+        var identityUser = UserManager.Users.FirstOrDefault(x => x.UsuarioId == usuarioId);
+        if (identityUser is null)
+        {
+            return;
+        }
+
+        identityUser.IsActive = false;
+        identityUser.UsuarioId = null;
+        await UserManager.UpdateAsync(identityUser);
+    }
+
+    private async Task EliminarUsuarioFuncionalAsync(int usuarioId)
+    {
+        await using var db = await DbContextFactory.CreateDbContextAsync();
+        var usuario = await db.Usuarios.FindAsync(usuarioId);
+        if (usuario is null)
+        {
+            return;
+        }
+
+        db.Usuarios.Remove(usuario);
+        await db.SaveChangesAsync();
+    }
+
+    private async Task CopiarUltimoEnlaceAsync()
+    {
+        if (string.IsNullOrWhiteSpace(ultimoEnlaceActivación))
+        {
+            return;
+        }
+
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", ultimoEnlaceActivación);
+        NotificationService.Notify(NotificationSeverity.Success, "Copiado", "Enlace de activación copiado al portapapeles.");
     }
 
     private static string ObtenerRolesTexto(Usuario usuario)

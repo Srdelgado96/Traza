@@ -1,4 +1,4 @@
-@using Traza.Web.Components.Models
+﻿@using Traza.Web.Components.Models
 @using Traza.Web.Data.Entidades
 @inject DialogService DialogService
 
@@ -23,13 +23,13 @@
             </div>
 
             <div class="col-md-3">
-                <label class="form-label">Genero</label>
+                <label class="form-label">Género</label>
                 <RadzenDropDown Data="@generos"
                                 TextProperty="Text"
                                 ValueProperty="Value"
                                 @bind-Value="Modelo.Genero"
                                 AllowClear="true"
-                                Placeholder="Sin genero"
+                                Placeholder="Sin género"
                                 Style="width:100%;" />
             </div>
 

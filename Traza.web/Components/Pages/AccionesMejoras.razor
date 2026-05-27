@@ -11,7 +11,7 @@
 @inject NotificationService NotificationService
 @implements IDisposable
 
-<PageTitle>Acciones de Mejoras | Traza</PageTitle>
+<PageTitle>Acciones de Mejora | Traza</PageTitle>
 
 @if (cargando)
 {
@@ -26,13 +26,13 @@ else
 {
     <div class="page-header">
         <div class="page-header-content">
-            <h4 class="page-title">Acciones de Mejoras</h4>
+            <h4 class="page-title">Acciones de Mejora</h4>
             <div class="text-muted">Consulta y acceso al detalle completo de las acciones.</div>
         </div>
         <div class="page-header-actions">
             <button type="button" class="btn btn-primary btn-round" @onclick="AbrirNuevoAsync">
                 <i class="fas fa-plus me-2"></i>
-                Nueva accion
+                Nueva acción
             </button>
         </div>
     </div>
@@ -48,7 +48,7 @@ else
                     <RadzenDataGridColumn TItem="AccionMejora" Title="Tipo">
                         <Template Context="item">@(item.TipoAccion?.Nombre ?? "-")</Template>
                     </RadzenDataGridColumn>
-                    <RadzenDataGridColumn TItem="AccionMejora" Property="Descripcion" Title="Descripcion" />
+                    <RadzenDataGridColumn TItem="AccionMejora" Property="Descripcion" Title="Descripción" />
                     <RadzenDataGridColumn TItem="AccionMejora" Title="Estado">
                         <Template Context="item">@item.Estado.Nombre</Template>
                     </RadzenDataGridColumn>
@@ -111,20 +111,20 @@ else
             .FirstAsync(x => x.Id == accion.Id);
 
         await DialogService.OpenAsync<AccionMejoraDetalleDialog>(
-            modoEdicion ? "Editar accion de mejora" : "Ver accion de mejora",
+            modoEdicion ? "Editar acción de mejora" : "Ver acción de mejora",
             new Dictionary<string, object?> { [nameof(AccionMejoraDetalleDialog.Accion)] = detalle },
             new DialogOptions { Width = "1100px", Height = "760px", CloseDialogOnOverlayClick = true });
     }
 
     private async Task EliminarAsync(int id)
     {
-        var confirmacion = await DialogService.Confirm("La accion de mejora se eliminara junto con sus datos hijos.", "Eliminar accion de mejora", new ConfirmOptions
+        var confirmación = await DialogService.Confirm("La acción de mejora se eliminará junto con sus datos hijos.", "Eliminar acción de mejora", new ConfirmOptions
         {
             OkButtonText = "Eliminar",
             CancelButtonText = "Cancelar"
         });
 
-        if (confirmacion != true)
+        if (confirmación != true)
         {
             return;
         }
@@ -140,11 +140,11 @@ else
         try
         {
             await db.SaveChangesAsync();
-            NotificationService.Notify(NotificationSeverity.Success, "Eliminado", "Accion de mejora eliminada correctamente.");
+            NotificationService.Notify(NotificationSeverity.Success, "Eliminado", "Acción de mejora eliminada correctamente.");
         }
         catch (DbUpdateException)
         {
-            NotificationService.Notify(NotificationSeverity.Warning, "No se pudo eliminar", "La accion de mejora tiene relaciones que impiden su borrado.");
+            NotificationService.Notify(NotificationSeverity.Warning, "No se pudo eliminar", "La acción de mejora tiene relaciones que impiden su borrado.");
         }
 
         await RecargarAsync();

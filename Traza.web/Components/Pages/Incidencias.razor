@@ -1,4 +1,4 @@
-@page "/incidencias"
+﻿@page "/incidencias"
 @rendermode InteractiveServer
 @using Microsoft.EntityFrameworkCore
 @using Traza.Web.Components.Dialogs
@@ -11,7 +11,7 @@
 @inject NotificationService NotificationService
 @implements IDisposable
 
-<PageTitle>Gestion de Incidencias | Traza</PageTitle>
+<PageTitle>Gestión de Incidencias | Traza</PageTitle>
 
 @if (cargando)
 {
@@ -26,7 +26,7 @@ else
 {
     <div class="page-header">
         <div class="page-header-content">
-            <h4 class="page-title">Gestion de Incidencias</h4>
+            <h4 class="page-title">Gestión de Incidencias</h4>
             <div class="text-muted">Vista general de incidencias con acceso al detalle completo.</div>
         </div>
         <div class="page-header-actions">
@@ -45,10 +45,10 @@ else
                     <RadzenDataGridColumn TItem="Incidencia" Title="Proceso">
                         <Template Context="item">@item.Proceso.Nombre</Template>
                     </RadzenDataGridColumn>
-                    <RadzenDataGridColumn TItem="Incidencia" Title="Tipologia">
+                    <RadzenDataGridColumn TItem="Incidencia" Title="Tipología">
                         <Template Context="item">@(item.Tipologia?.Nombre ?? "-")</Template>
                     </RadzenDataGridColumn>
-                    <RadzenDataGridColumn TItem="Incidencia" Property="Descripcion" Title="Descripcion" />
+                    <RadzenDataGridColumn TItem="Incidencia" Property="Descripcion" Title="Descripción" />
                     <RadzenDataGridColumn TItem="Incidencia" Title="Estado">
                         <Template Context="item">@item.Estado.Nombre</Template>
                     </RadzenDataGridColumn>
@@ -119,13 +119,13 @@ else
 
     private async Task EliminarAsync(int id)
     {
-        var confirmacion = await DialogService.Confirm("La incidencia se eliminara junto con sus datos hijos.", "Eliminar incidencia", new ConfirmOptions
+        var confirmación = await DialogService.Confirm("La incidencia se eliminará junto con sus datos hijos.", "Eliminar incidencia", new ConfirmOptions
         {
             OkButtonText = "Eliminar",
             CancelButtonText = "Cancelar"
         });
 
-        if (confirmacion != true)
+        if (confirmación != true)
         {
             return;
         }

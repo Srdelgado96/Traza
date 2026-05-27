@@ -1,9 +1,10 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Traza.Web.Data.Entidades;
 
 namespace Traza.Web.Data;
 
-public class ApplicationDbContext : DbContext
+public class ApplicationDbContext : IdentityUserContext<ApplicationUser>
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
@@ -211,6 +212,16 @@ public class ApplicationDbContext : DbContext
                 .WithMany(x => x.UsuariosRol)
                 .HasForeignKey(x => x.RolId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ApplicationUser>(entity =>
+        {
+            entity.Property(x => x.DisplayName).HasMaxLength(150).IsRequired();
+            entity.HasIndex(x => x.UsuarioId).IsUnique().HasFilter("[UsuarioId] IS NOT NULL");
+            entity.HasOne<Usuario>()
+                .WithOne()
+                .HasForeignKey<ApplicationUser>(x => x.UsuarioId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 
@@ -733,9 +744,9 @@ public class ApplicationDbContext : DbContext
             new EstadoFaseProyecto { Id = 6, Nombre = "Terminado", Orden = 6, EsCierre = true });
 
         modelBuilder.Entity<Rol>().HasData(
-            new Rol { Id = 1, Nombre = "Administrador", Descripcion = "Acceso completo a la aplicacion.", Activo = true },
-            new Rol { Id = 2, Nombre = "Calidad", Descripcion = "Gestion funcional de incidencias y acciones.", Activo = true },
-            new Rol { Id = 3, Nombre = "Proyectos", Descripcion = "Seguimiento y coordinacion de proyectos.", Activo = true },
+            new Rol { Id = 1, Nombre = "Administrador", Descripcion = "Acceso completo a la aplicación.", Activo = true },
+            new Rol { Id = 2, Nombre = "Calidad", Descripcion = "Gestión funcional de incidencias y acciones.", Activo = true },
+            new Rol { Id = 3, Nombre = "Proyectos", Descripcion = "Seguimiento y coordinación de proyectos.", Activo = true },
             new Rol { Id = 4, Nombre = "Consulta", Descripcion = "Acceso de solo consulta.", Activo = true });
     }
 

@@ -41,27 +41,27 @@
                         <span class="sidebar-mini-icon">
                             <i class="icon-briefcase"></i>
                         </span>
-                        <h4 class="text-section">Gestion</h4>
+                        <h4 class="text-section">Gestión</h4>
                     </li>
 
                     <li class="nav-item">
                         <a href="/incidencias">
                             <i class="icon-exclamation"></i>
-                            <p>Gestion de Incidencias</p>
+                            <p>Gestión de Incidencias</p>
                         </a>
                     </li>
 
                     <li class="nav-item">
                         <a href="/acciones-mejoras">
                             <i class="icon-list"></i>
-                            <p>Acciones de Mejoras</p>
+                            <p>Acciones de Mejora</p>
                         </a>
                     </li>
 
                     <li class="nav-item">
                         <a href="/proyectos">
                             <i class="icon-organization"></i>
-                            <p>Gestion de Proyectos</p>
+                            <p>Gestión de Proyectos</p>
                         </a>
                     </li>
 
@@ -75,7 +75,7 @@
                     <li class="nav-item">
                         <a href="/gestion-tablas-maestras">
                             <i class="icon-layers"></i>
-                            <p>Gestion de tablas maestras</p>
+                            <p>Gestión de tablas maestras</p>
                         </a>
                     </li>
 
@@ -89,7 +89,7 @@
                     <li class="nav-item">
                         <a href="/">
                             <i class="icon-clock"></i>
-                            <p>Auditoria</p>
+                            <p>Auditoría</p>
                         </a>
                     </li>
                 </ul>
@@ -122,14 +122,14 @@
                 <div class="container-fluid">
                     <div>
                         <div class="fw-semibold traza-app-name">Traza</div>
-                        <div class="small text-muted">Gestion industrial de incidencias, acciones y proyectos</div>
+                        <div class="small text-muted">Gestión industrial de incidencias, acciones y proyectos</div>
                     </div>
 
                     <ul class="navbar-nav topbar-nav ms-md-auto align-items-center">
                         <li class="nav-item me-2 d-none d-md-block">
                             <button type="button" class="btn btn-primary btn-round" @onclick="AbrirSelectorCreacionAsync">
                                 <i class="fas fa-plus me-1"></i>
-                                Nueva gestion
+                                Nueva gestión
                             </button>
                         </li>
                         <li class="nav-item topbar-user dropdown hidden-caret">
@@ -150,6 +150,15 @@
                                 </li>
                             </ul>
                         </li>
+                        <li class="nav-item ms-2">
+                            <form method="post" action="/account/logout">
+                                <AntiforgeryToken />
+                                <button type="submit" class="btn btn-outline-danger btn-round">
+                                    <i class="fas fa-sign-out-alt me-1"></i>
+                                    Log out
+                                </button>
+                            </form>
+                        </li>
                     </ul>
                 </div>
             </nav>
@@ -161,38 +170,18 @@
             </div>
         </div>
 
-        <footer class="footer">
-            <div class="container-fluid">
-                <nav class="pull-left">
-                    <ul class="nav">
-                        <li class="nav-item">
-                            <span class="nav-link ps-0">Traza</span>
-                        </li>
-                        <li class="nav-item">
-                            <span class="nav-link">Blazor Web App</span>
-                        </li>
-                        <li class="nav-item">
-                            <span class="nav-link">SQL Server</span>
-                        </li>
-                    </ul>
-                </nav>
-                <div class="copyright ms-auto">
-                    Base administrativa lista para evolucionar sobre incidencias, acciones y proyectos.
-                </div>
-            </div>
-        </footer>
     </div>
 </div>
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>
-    <span class="dismiss">×</span>
+    <span class="dismiss">&times;</span>
 </div>
 
 @code {
     private Task AbrirSelectorCreacionAsync()
         => DialogService.OpenAsync<CreacionGestionSelectorDialog>(
-            "Nueva gestion",
+            "Nueva gestión",
             options: new DialogOptions { Width = "920px", Height = "420px", CloseDialogOnOverlayClick = true });
 }
