@@ -7,6 +7,8 @@
 @inject DialogService DialogService
 @inject NotificationService NotificationService
 @inject IDocumentStorageService DocumentStorageService
+@inject IAuthorizationService AuthorizationService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 @if (cargando)
 {
@@ -596,6 +598,13 @@ else
 
     private async Task GuardarAsync()
     {
+        if (!await UsuarioTienePermisoAsync(TrazaPolicies.CanCreateIncidents))
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Acceso denegado", "No tienes permisos para crear incidencias.");
+            DialogService.Close(false);
+            return;
+        }
+
         if (guardando || modelo.DetectorId is null || modelo.ProcesoId is null || modelo.EstadoId is null)
         {
             return;
@@ -643,6 +652,12 @@ else
             await EliminarArchivosGuardadosAsync(rutasGuardadas);
             NotificationService.Notify(NotificationSeverity.Error, "No se pudo guardar", "Revisa los datos de la incidencia e intentalo de nuevo.");
         }
+    }
+
+    private async Task<bool> UsuarioTienePermisoAsync(string policy)
+    {
+        var user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
+        return (await AuthorizationService.AuthorizeAsync(user, policy)).Succeeded;
     }
 
     private void AgregarDetalle()

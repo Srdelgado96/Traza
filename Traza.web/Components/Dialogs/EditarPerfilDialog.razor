@@ -1,0 +1,169 @@
+@using Microsoft.AspNetCore.Identity
+@using System.Security.Claims
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject DialogService DialogService
+@inject IWebHostEnvironment Environment
+@inject NotificationService NotificationService
+@inject UserManager<ApplicationUser> UserManager
+
+<div class="p-3">
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <div class="avatar avatar-xl">
+            @if (!string.IsNullOrWhiteSpace(profileImagePath))
+            {
+                <img src="@profileImagePath" alt="@displayName" class="avatar-img rounded-circle" />
+            }
+            else
+            {
+                <span class="avatar-title rounded-circle border bg-primary">@Initials</span>
+            }
+        </div>
+        <div>
+            <div class="fw-semibold">@displayName</div>
+            <div class="small text-muted">@email</div>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label" for="profile-display-name">Nombre visible</label>
+        <input id="profile-display-name" class="form-control" @bind="displayName" maxlength="150" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Foto de perfil</label>
+        <InputFile class="form-control" OnChange="SeleccionarFotoAsync" accept=".png,.jpg,.jpeg,.webp,.gif" />
+        <div class="form-text">Imagen PNG, JPG, WEBP o GIF. Maximo 2 MB.</div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2 mt-4">
+        <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" Click="@Cancelar" />
+        <RadzenButton Text="Guardar" Icon="save" ButtonStyle="ButtonStyle.Primary" Click="@GuardarAsync" IsBusy="@guardando" Disabled="@guardando" />
+    </div>
+</div>
+
+@code {
+    private const long MaxImageSize = 2 * 1024 * 1024;
+    private static readonly string[] AllowedExtensions = [".png", ".jpg", ".jpeg", ".webp", ".gif"];
+    private ApplicationUser? user;
+    private IBrowserFile? selectedFile;
+    private string displayName = string.Empty;
+    private string? email;
+    private string? profileImagePath;
+    private bool guardando;
+
+    private string Initials => BuildInitials(displayName);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var principal = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
+        var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            DialogService.Close(false);
+            return;
+        }
+
+        user = await UserManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            DialogService.Close(false);
+            return;
+        }
+
+        displayName = user.DisplayName;
+        email = user.Email;
+        profileImagePath = user.ProfileImagePath;
+    }
+
+    private Task SeleccionarFotoAsync(InputFileChangeEventArgs args)
+    {
+        selectedFile = args.File;
+        return Task.CompletedTask;
+    }
+
+    private async Task GuardarAsync()
+    {
+        if (user is null || guardando)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(displayName))
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Revision requerida", "El nombre visible es obligatorio.");
+            return;
+        }
+
+        guardando = true;
+
+        try
+        {
+            user.DisplayName = displayName.Trim();
+
+            if (selectedFile is not null)
+            {
+                user.ProfileImagePath = await GuardarFotoAsync(selectedFile);
+            }
+
+            var result = await UserManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "No se pudo guardar", string.Join(" ", result.Errors.Select(x => x.Description)));
+                return;
+            }
+
+            DialogService.Close(true);
+        }
+        catch (InvalidOperationException ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Foto no valida", ex.Message);
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+
+    private async Task<string> GuardarFotoAsync(IBrowserFile file)
+    {
+        var extension = Path.GetExtension(file.Name);
+        if (string.IsNullOrWhiteSpace(extension) || !AllowedExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("El formato de imagen no esta permitido.");
+        }
+
+        if (file.Size <= 0 || file.Size > MaxImageSize)
+        {
+            throw new InvalidOperationException("La imagen debe pesar 2 MB o menos.");
+        }
+
+        var relativeDirectory = "profile-images";
+        var absoluteDirectory = Path.Combine(Environment.WebRootPath, relativeDirectory);
+        Directory.CreateDirectory(absoluteDirectory);
+
+        var fileName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
+        var absolutePath = Path.Combine(absoluteDirectory, fileName);
+        await using var source = file.OpenReadStream(MaxImageSize);
+        await using var destination = File.Create(absolutePath);
+        await source.CopyToAsync(destination);
+
+        return $"/{relativeDirectory}/{fileName}";
+    }
+
+    private void Cancelar()
+    {
+        DialogService.Close(false);
+    }
+
+    private static string BuildInitials(string value)
+    {
+        var parts = value.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length == 0)
+        {
+            return "US";
+        }
+
+        var initials = string.Concat(parts.Take(2).Select(x => char.ToUpperInvariant(x[0])));
+        return initials.Length == 1 ? $"{initials}{initials}" : initials;
+    }
+}

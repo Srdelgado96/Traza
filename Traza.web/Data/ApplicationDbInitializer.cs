@@ -1,5 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Traza.Web.Data.Entidades;
+using Traza.Web.Security;
 
 namespace Traza.Web.Data;
 
@@ -11,8 +12,20 @@ public static class ApplicationDbInitializer
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
         await dbContext.Database.MigrateAsync();
+        await EnsureApplicationUserSchemaAsync(dbContext);
         await EnsureRolesSchemaAsync(dbContext);
         await SeedAsync(dbContext);
+    }
+
+    private static async Task EnsureApplicationUserSchemaAsync(ApplicationDbContext dbContext)
+    {
+        await dbContext.Database.ExecuteSqlRawAsync(
+            """
+            IF COL_LENGTH(N'[AspNetUsers]', N'ProfileImagePath') IS NULL
+            BEGIN
+                ALTER TABLE [AspNetUsers] ADD [ProfileImagePath] NVARCHAR(500) NULL;
+            END
+            """);
     }
 
     private static async Task EnsureRolesSchemaAsync(ApplicationDbContext dbContext)
@@ -47,29 +60,38 @@ public static class ApplicationDbInitializer
                 CREATE INDEX [IX_UsuariosRol_RolId] ON [UsuariosRol]([RolId]);
             END
             """);
+
+        await dbContext.Database.ExecuteSqlRawAsync(
+            """
+            IF OBJECT_ID(N'[RolesPermisos]', N'U') IS NULL
+            BEGIN
+                CREATE TABLE [RolesPermisos](
+                    [RolId] INT NOT NULL,
+                    [Permiso] NVARCHAR(100) NOT NULL,
+                    CONSTRAINT [PK_RolesPermisos] PRIMARY KEY ([RolId], [Permiso]),
+                    CONSTRAINT [FK_RolesPermisos_Roles_RolId] FOREIGN KEY ([RolId]) REFERENCES [Roles]([Id]) ON DELETE CASCADE
+                );
+            END
+            """);
     }
 
     private static async Task SeedAsync(ApplicationDbContext dbContext)
     {
-        if (!await dbContext.Roles.AnyAsync())
-        {
-            dbContext.Roles.AddRange(
-            [
-                new Rol { Nombre = "Administrador", Descripcion = "Acceso completo a la aplicación.", Activo = true },
-                new Rol { Nombre = "Calidad", Descripcion = "Gestión funcional de incidencias y acciones.", Activo = true },
-                new Rol { Nombre = "Proyectos", Descripcion = "Seguimiento y coordinación de proyectos.", Activo = true },
-                new Rol { Nombre = "Consulta", Descripcion = "Acceso de solo consulta.", Activo = true }
-            ]);
-
-            await dbContext.SaveChangesAsync();
-        }
+        await EnsureRoleAsync(dbContext, TrazaRoles.Administrador, "Acceso completo a la aplicacion.");
+        await EnsureRoleAsync(dbContext, TrazaRoles.Supervisor, "Responsable de area con permisos de revision y coordinacion.");
+        await EnsureRoleAsync(dbContext, TrazaRoles.Coordinador, "Gestion operativa de incidencias, acciones y proyectos.");
+        await EnsureRoleAsync(dbContext, TrazaRoles.Usuario, "Alta de incidencias y acciones de mejora, con consulta general.");
+        await EnsureRoleAsync(dbContext, TrazaRoles.Consulta, "Acceso de solo consulta.");
+        await EnsureRoleAsync(dbContext, TrazaRoles.Calidad, "Gestion funcional de incidencias y acciones.");
+        await EnsureRoleAsync(dbContext, TrazaRoles.Proyectos, "Seguimiento y coordinacion de proyectos.");
+        await EnsureDefaultPermissionsAsync(dbContext);
 
         if (!await dbContext.UsuariosRol.AnyAsync())
         {
-            var admin = await dbContext.Roles.FirstOrDefaultAsync(x => x.Nombre == "Administrador");
-            var calidad = await dbContext.Roles.FirstOrDefaultAsync(x => x.Nombre == "Calidad");
-            var proyectos = await dbContext.Roles.FirstOrDefaultAsync(x => x.Nombre == "Proyectos");
-            var consulta = await dbContext.Roles.FirstOrDefaultAsync(x => x.Nombre == "Consulta");
+            var admin = await dbContext.Roles.FirstOrDefaultAsync(x => x.Nombre == TrazaRoles.Administrador);
+            var calidad = await dbContext.Roles.FirstOrDefaultAsync(x => x.Nombre == TrazaRoles.Calidad);
+            var proyectos = await dbContext.Roles.FirstOrDefaultAsync(x => x.Nombre == TrazaRoles.Proyectos);
+            var consulta = await dbContext.Roles.FirstOrDefaultAsync(x => x.Nombre == TrazaRoles.Consulta);
 
             if (admin is not null && calidad is not null && proyectos is not null && consulta is not null)
             {
@@ -84,6 +106,101 @@ public static class ApplicationDbInitializer
 
                 await dbContext.SaveChangesAsync();
             }
+        }
+    }
+
+    private static async Task EnsureDefaultPermissionsAsync(ApplicationDbContext dbContext)
+    {
+        await EnsurePermissionsAsync(dbContext, TrazaRoles.Administrador, TrazaPermissionCatalog.All.Select(x => x.Key));
+        await EnsurePermissionsAsync(dbContext, TrazaRoles.Supervisor,
+        [
+            TrazaPolicies.CanAccessProjects,
+            TrazaPolicies.CanCreateIncidents,
+            TrazaPolicies.CanEditIncidents,
+            TrazaPolicies.CanDeleteIncidents,
+            TrazaPolicies.CanCreateImprovementActions,
+            TrazaPolicies.CanEditImprovementActions,
+            TrazaPolicies.CanDeleteImprovementActions,
+            TrazaPolicies.CanCreateProjects,
+            TrazaPolicies.CanEditProjects,
+            TrazaPolicies.CanDeleteProjects,
+            TrazaPolicies.CanOpenCreationSelector
+        ]);
+        await EnsurePermissionsAsync(dbContext, TrazaRoles.Coordinador,
+        [
+            TrazaPolicies.CanAccessProjects,
+            TrazaPolicies.CanCreateIncidents,
+            TrazaPolicies.CanEditIncidents,
+            TrazaPolicies.CanCreateImprovementActions,
+            TrazaPolicies.CanEditImprovementActions,
+            TrazaPolicies.CanCreateProjects,
+            TrazaPolicies.CanEditProjects,
+            TrazaPolicies.CanOpenCreationSelector
+        ]);
+        await EnsurePermissionsAsync(dbContext, TrazaRoles.Usuario,
+        [
+            TrazaPolicies.CanCreateIncidents,
+            TrazaPolicies.CanCreateImprovementActions,
+            TrazaPolicies.CanOpenCreationSelector
+        ]);
+        await EnsurePermissionsAsync(dbContext, TrazaRoles.Consulta,
+        [
+            TrazaPolicies.CanAccessProjects
+        ]);
+        await EnsurePermissionsAsync(dbContext, TrazaRoles.Calidad,
+        [
+            TrazaPolicies.CanCreateIncidents,
+            TrazaPolicies.CanEditIncidents,
+            TrazaPolicies.CanCreateImprovementActions,
+            TrazaPolicies.CanEditImprovementActions,
+            TrazaPolicies.CanOpenCreationSelector
+        ]);
+        await EnsurePermissionsAsync(dbContext, TrazaRoles.Proyectos,
+        [
+            TrazaPolicies.CanAccessProjects,
+            TrazaPolicies.CanCreateProjects,
+            TrazaPolicies.CanEditProjects,
+            TrazaPolicies.CanOpenCreationSelector
+        ]);
+    }
+
+    private static async Task EnsurePermissionsAsync(ApplicationDbContext dbContext, string roleName, IEnumerable<string> permissions)
+    {
+        var role = await dbContext.Roles.FirstOrDefaultAsync(x => x.Nombre == roleName);
+        if (role is null)
+        {
+            return;
+        }
+
+        var existing = await dbContext.RolesPermisos
+            .Where(x => x.RolId == role.Id)
+            .Select(x => x.Permiso)
+            .ToListAsync();
+
+        var existingSet = existing.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var permission in permissions.Where(x => !existingSet.Contains(x)))
+        {
+            dbContext.RolesPermisos.Add(new RolPermiso { RolId = role.Id, Permiso = permission });
+        }
+
+        await dbContext.SaveChangesAsync();
+    }
+
+    private static async Task EnsureRoleAsync(ApplicationDbContext dbContext, string nombre, string descripcion)
+    {
+        var role = await dbContext.Roles.FirstOrDefaultAsync(x => x.Nombre == nombre);
+        if (role is null)
+        {
+            dbContext.Roles.Add(new Rol { Nombre = nombre, Descripcion = descripcion, Activo = true });
+            await dbContext.SaveChangesAsync();
+            return;
+        }
+
+        if (!role.Activo || string.IsNullOrWhiteSpace(role.Descripcion))
+        {
+            role.Activo = true;
+            role.Descripcion = string.IsNullOrWhiteSpace(role.Descripcion) ? descripcion : role.Descripcion;
+            await dbContext.SaveChangesAsync();
         }
     }
 }

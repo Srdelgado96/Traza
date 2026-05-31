@@ -112,16 +112,45 @@ h1:focus {
     color: #fff;
 }
 
+.traza-icon-btn-info {
+    background: #e8f3ff;
+    border-color: #b9dcff;
+    color: #1269db;
+}
+
 .traza-icon-btn-success {
     background: #31ce36;
     border-color: #31ce36;
     color: #fff;
 }
 
+.traza-icon-btn-warning {
+    background: #fff3df;
+    border-color: #ffd69b;
+    color: #b86500;
+}
+
 .traza-icon-btn-danger {
     background: #f25961;
     border-color: #f25961;
     color: #fff;
+}
+
+.traza-icon-btn-primary:hover,
+.traza-icon-btn-success:hover,
+.traza-icon-btn-danger:hover {
+    color: #fff;
+    filter: brightness(0.96);
+}
+
+.traza-icon-btn-info:hover {
+    background: #dceeff;
+    color: #0b5fc7;
+}
+
+.traza-icon-btn-warning:hover {
+    background: #ffe8c2;
+    color: #9c5700;
 }
 
 .traza-icon-btn i {

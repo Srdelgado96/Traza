@@ -13,6 +13,7 @@ public class ApplicationDbContext : IdentityUserContext<ApplicationUser>
 
     public DbSet<Departamento> Departamentos => Set<Departamento>();
     public DbSet<Rol> Roles => Set<Rol>();
+    public DbSet<RolPermiso> RolesPermisos => Set<RolPermiso>();
     public DbSet<Usuario> Usuarios => Set<Usuario>();
     public DbSet<UsuarioRol> UsuariosRol => Set<UsuarioRol>();
     public DbSet<Proceso> Procesos => Set<Proceso>();
@@ -75,6 +76,17 @@ public class ApplicationDbContext : IdentityUserContext<ApplicationUser>
             entity.Property(x => x.Nombre).HasMaxLength(100).IsRequired();
             entity.Property(x => x.Descripcion).HasMaxLength(500);
             entity.HasIndex(x => x.Nombre).IsUnique();
+        });
+
+        modelBuilder.Entity<RolPermiso>(entity =>
+        {
+            entity.ToTable("RolesPermisos");
+            entity.HasKey(x => new { x.RolId, x.Permiso });
+            entity.Property(x => x.Permiso).HasMaxLength(100).IsRequired();
+            entity.HasOne(x => x.Rol)
+                .WithMany(x => x.Permisos)
+                .HasForeignKey(x => x.RolId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Proceso>(entity =>
@@ -217,6 +229,7 @@ public class ApplicationDbContext : IdentityUserContext<ApplicationUser>
         modelBuilder.Entity<ApplicationUser>(entity =>
         {
             entity.Property(x => x.DisplayName).HasMaxLength(150).IsRequired();
+            entity.Property(x => x.ProfileImagePath).HasMaxLength(500);
             entity.HasIndex(x => x.UsuarioId).IsUnique().HasFilter("[UsuarioId] IS NOT NULL");
             entity.HasOne<Usuario>()
                 .WithOne()

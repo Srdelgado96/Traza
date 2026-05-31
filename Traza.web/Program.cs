@@ -5,12 +5,15 @@ using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.AspNetCore.Authorization;
 using Radzen;
 using System.ComponentModel.DataAnnotations;
+using System.Security.Cryptography;
 using System.Text;
 using Traza.Web.Configuration;
 using Traza.Web.Components;
 using Traza.Web.Data;
+using Traza.Web.Security;
 using Traza.Web.Services.AccionesMejora;
 using Traza.Web.Services.Documents;
 using Traza.Web.Services.Incidencias;
@@ -33,7 +36,29 @@ builder.Services.AddScoped(sp =>
 
 builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
     .AddIdentityCookies();
-builder.Services.AddAuthorization();
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.Name = "__Host-Traza.Auth";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.Path = "/";
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.LoginPath = "/login";
+    options.LogoutPath = "/account/logout";
+    options.AccessDeniedPath = "/login";
+    options.SlidingExpiration = true;
+});
+builder.Services.AddAuthorization(options =>
+{
+    foreach (var permission in TrazaPermissionCatalog.All)
+    {
+        options.AddPolicy(permission.Key, policy =>
+        {
+            policy.RequireAuthenticatedUser();
+            policy.AddRequirements(new TrazaPermissionRequirement(permission.Key));
+        });
+    }
+});
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
         options.Password.RequiredLength = 10;
@@ -49,6 +74,9 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddSignInManager()
     .AddDefaultTokenProviders();
+builder.Services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, TrazaClaimsPrincipalFactory>();
+builder.Services.AddScoped<IAuthorizationHandler, TrazaPermissionAuthorizationHandler>();
+builder.Services.AddCascadingAuthenticationState();
 
 builder.Services.AddRadzenComponents();
 builder.Services.Configure<DocumentStorageOptions>(builder.Configuration.GetSection(DocumentStorageOptions.SectionName));
@@ -62,6 +90,12 @@ var app = builder.Build();
 await app.Services.InitializeDatabaseAsync();
 await app.Services.InitializeDocumentStorageAsync();
 
+if (args is ["--reset-password", var userName])
+{
+    await ResetPasswordAndExitAsync(app.Services, userName);
+    return;
+}
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
@@ -74,6 +108,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.Use(async (context, next) =>
 {
+    // Traza is private by default: every non-anonymous route must have a signed-in user.
     if (context.User.Identity?.IsAuthenticated == true || IsAnonymousPath(context.Request.Path))
     {
         await next();
@@ -227,6 +262,89 @@ static bool IsLocalReturnUrl(string? returnUrl)
        returnUrl.StartsWith('/') &&
        !returnUrl.StartsWith("//") &&
        !returnUrl.StartsWith("/\\");
+
+static async Task ResetPasswordAndExitAsync(IServiceProvider services, string userName)
+{
+    await using var scope = services.CreateAsyncScope();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var user = await userManager.FindByNameAsync(userName);
+    var password = GenerateTemporaryPassword();
+
+    if (user is null)
+    {
+        var usuario = await dbContext.Usuarios
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Login == userName);
+
+        if (usuario is null)
+        {
+            Console.Error.WriteLine($"No se encontro el usuario '{userName}'.");
+            Environment.ExitCode = 1;
+            return;
+        }
+
+        user = new ApplicationUser
+        {
+            UserName = usuario.Login,
+            Email = usuario.Email,
+            EmailConfirmed = !string.IsNullOrWhiteSpace(usuario.Email),
+            DisplayName = usuario.Nombre,
+            IsActive = usuario.Activo,
+            UsuarioId = usuario.Id
+        };
+
+        var createResult = await userManager.CreateAsync(user, password);
+        if (!createResult.Succeeded)
+        {
+            Console.Error.WriteLine(string.Join(Environment.NewLine, createResult.Errors.Select(x => x.Description)));
+            Environment.ExitCode = 1;
+            return;
+        }
+
+        Console.WriteLine($"Usuario: {user.UserName}");
+        Console.WriteLine($"Contrasena temporal: {password}");
+        return;
+    }
+
+    var token = await userManager.GeneratePasswordResetTokenAsync(user);
+    var result = await userManager.ResetPasswordAsync(user, token, password);
+    if (!result.Succeeded)
+    {
+        Console.Error.WriteLine(string.Join(Environment.NewLine, result.Errors.Select(x => x.Description)));
+        Environment.ExitCode = 1;
+        return;
+    }
+
+    await userManager.SetLockoutEndDateAsync(user, null);
+    await userManager.ResetAccessFailedCountAsync(user);
+
+    Console.WriteLine($"Usuario: {user.UserName}");
+    Console.WriteLine($"Contrasena temporal: {password}");
+}
+
+static string GenerateTemporaryPassword()
+{
+    const string lower = "abcdefghijkmnopqrstuvwxyz";
+    const string upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+    const string digits = "23456789";
+    const string symbols = "!@$%*?";
+    const string all = lower + upper + digits + symbols;
+
+    Span<char> password = stackalloc char[16];
+    password[0] = lower[RandomNumberGenerator.GetInt32(lower.Length)];
+    password[1] = upper[RandomNumberGenerator.GetInt32(upper.Length)];
+    password[2] = digits[RandomNumberGenerator.GetInt32(digits.Length)];
+    password[3] = symbols[RandomNumberGenerator.GetInt32(symbols.Length)];
+
+    for (var i = 4; i < password.Length; i++)
+    {
+        password[i] = all[RandomNumberGenerator.GetInt32(all.Length)];
+    }
+
+    RandomNumberGenerator.Shuffle(password);
+    return new string(password);
+}
 
 public sealed class LoginRequest
 {

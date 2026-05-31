@@ -145,4 +145,13 @@ public class Rol
     public bool Activo { get; set; } = true;
 
     public ICollection<UsuarioRol> UsuariosRol { get; set; } = new List<UsuarioRol>();
+    public ICollection<RolPermiso> Permisos { get; set; } = new List<RolPermiso>();
+}
+
+public class RolPermiso
+{
+    public int RolId { get; set; }
+    public string Permiso { get; set; } = string.Empty;
+
+    public Rol Rol { get; set; } = null!;
 }

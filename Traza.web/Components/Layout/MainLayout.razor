@@ -1,8 +1,10 @@
 @inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Identity
+@using System.Security.Claims
 @using Traza.Web.Components.Dialogs
-@using Traza.Web.Services.Incidencias
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @inject DialogService DialogService
-@inject IncidenciaDialogCoordinator IncidenciaDialogCoordinator
+@inject UserManager<ApplicationUser> UserManager
 
 <RadzenHost />
 
@@ -41,13 +43,13 @@
                         <span class="sidebar-mini-icon">
                             <i class="icon-briefcase"></i>
                         </span>
-                        <h4 class="text-section">Gestión</h4>
+                        <h4 class="text-section">Gestion</h4>
                     </li>
 
                     <li class="nav-item">
                         <a href="/incidencias">
                             <i class="icon-exclamation"></i>
-                            <p>Gestión de Incidencias</p>
+                            <p>Gestion de Incidencias</p>
                         </a>
                     </li>
 
@@ -61,7 +63,7 @@
                     <li class="nav-item">
                         <a href="/proyectos">
                             <i class="icon-organization"></i>
-                            <p>Gestión de Proyectos</p>
+                            <p>Gestion de Proyectos</p>
                         </a>
                     </li>
 
@@ -75,7 +77,7 @@
                     <li class="nav-item">
                         <a href="/gestion-tablas-maestras">
                             <i class="icon-layers"></i>
-                            <p>Gestión de tablas maestras</p>
+                            <p>Gestion de tablas maestras</p>
                         </a>
                     </li>
 
@@ -89,7 +91,7 @@
                     <li class="nav-item">
                         <a href="/">
                             <i class="icon-clock"></i>
-                            <p>Auditoría</p>
+                            <p>Auditoria</p>
                         </a>
                     </li>
                 </ul>
@@ -122,31 +124,33 @@
                 <div class="container-fluid">
                     <div>
                         <div class="fw-semibold traza-app-name">Traza</div>
-                        <div class="small text-muted">Gestión industrial de incidencias, acciones y proyectos</div>
+                        <div class="small text-muted">Gestion industrial de incidencias, acciones y proyectos</div>
                     </div>
 
                     <ul class="navbar-nav topbar-nav ms-md-auto align-items-center">
-                        <li class="nav-item me-2 d-none d-md-block">
-                            <button type="button" class="btn btn-primary btn-round" @onclick="AbrirSelectorCreacionAsync">
-                                <i class="fas fa-plus me-1"></i>
-                                Nueva gestión
-                            </button>
-                        </li>
                         <li class="nav-item topbar-user dropdown hidden-caret">
                             <a class="dropdown-toggle profile-pic" data-bs-toggle="dropdown" href="#" aria-expanded="false">
                                 <div class="avatar-sm">
-                                    <span class="avatar-title rounded-circle border border-white bg-primary">TR</span>
+                                    @if (!string.IsNullOrWhiteSpace(profileImagePath))
+                                    {
+                                        <img src="@profileImagePath" alt="@displayName" class="avatar-img rounded-circle" />
+                                    }
+                                    else
+                                    {
+                                        <span class="avatar-title rounded-circle border border-white bg-primary">@initials</span>
+                                    }
                                 </div>
                                 <span class="profile-username">
-                                    <span class="op-7">Entorno</span>
-                                    <span class="fw-bold">Local</span>
+                                    <span class="op-7">Usuario</span>
+                                    <span class="fw-bold">@displayName</span>
                                 </span>
                             </a>
                             <ul class="dropdown-menu dropdown-user animated fadeIn">
                                 <li>
-                                    <div class="dropdown-item-text">
-                                        Base visual Kaiadmin integrada en Blazor y lista para seguir creciendo.
-                                    </div>
+                                    <a href="/perfil" class="dropdown-item" @onclick="EditarPerfilAsync" @onclick:preventDefault @onclick:stopPropagation>
+                                        <i class="fas fa-user-edit me-2"></i>
+                                        Editar perfil
+                                    </a>
                                 </li>
                             </ul>
                         </li>
@@ -169,7 +173,6 @@
                 @Body
             </div>
         </div>
-
     </div>
 </div>
 
@@ -180,8 +183,57 @@
 </div>
 
 @code {
-    private Task AbrirSelectorCreacionAsync()
-        => DialogService.OpenAsync<CreacionGestionSelectorDialog>(
-            "Nueva gestión",
-            options: new DialogOptions { Width = "920px", Height = "420px", CloseDialogOnOverlayClick = true });
+    private string displayName = "Usuario";
+    private string initials = "US";
+    private string? profileImagePath;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarPerfilAsync();
+    }
+
+    private async Task CargarPerfilAsync()
+    {
+        var principal = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
+        var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return;
+        }
+
+        var user = await UserManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return;
+        }
+
+        displayName = string.IsNullOrWhiteSpace(user.DisplayName) ? user.UserName ?? "Usuario" : user.DisplayName;
+        initials = BuildInitials(displayName);
+        profileImagePath = user.ProfileImagePath;
+    }
+
+    private async Task EditarPerfilAsync()
+    {
+        var actualizado = await DialogService.OpenAsync<EditarPerfilDialog>(
+            "Editar perfil",
+            options: new DialogOptions { Width = "520px", CloseDialogOnOverlayClick = true });
+
+        if (actualizado == true)
+        {
+            await CargarPerfilAsync();
+            StateHasChanged();
+        }
+    }
+
+    private static string BuildInitials(string value)
+    {
+        var parts = value.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length == 0)
+        {
+            return "US";
+        }
+
+        var result = string.Concat(parts.Take(2).Select(x => char.ToUpperInvariant(x[0])));
+        return result.Length == 1 ? $"{result}{result}" : result;
+    }
 }

@@ -1,4 +1,5 @@
 @page "/usuarios"
+@attribute [Authorize(Policy = TrazaPolicies.CanManageUsers)]
 @rendermode InteractiveServer
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
@@ -33,10 +34,16 @@ else
             <h4 class="page-title">Usuarios</h4>
             <div class="text-muted">Vista general de usuarios internos con acceso a consulta, edición y eliminación.</div>
         </div>
-        <button type="button" class="btn btn-primary btn-round" @onclick="CrearAsync">
-            <i class="fas fa-user-plus me-1"></i>
-            Nuevo usuario
-        </button>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-primary btn-round" href="/roles-permisos">
+                <i class="fas fa-user-shield me-1"></i>
+                Roles y permisos
+            </a>
+            <button type="button" class="btn btn-primary btn-round" @onclick="CrearAsync">
+                <i class="fas fa-user-plus me-1"></i>
+                Nuevo usuario
+            </button>
+        </div>
     </div>
 
     @if (!string.IsNullOrWhiteSpace(ultimoEnlaceActivación))
@@ -72,19 +79,22 @@ else
                     <RadzenDataGridColumn TItem="Usuario" Title="Activo" Width="110px">
                         <Template Context="item">@(item.Activo ? "Sí" : "No")</Template>
                     </RadzenDataGridColumn>
-                    <RadzenDataGridColumn TItem="Usuario" Title="Acciones" Width="190px" TextAlign="TextAlign.Center">
+                    <RadzenDataGridColumn TItem="Usuario" Title="Acciones" Width="230px" TextAlign="TextAlign.Center">
                         <Template Context="item">
-                            <button type="button" class="btn traza-icon-btn" @onclick="() => AbrirDetalleAsync(item.Id)" title="Ver">
+                            <button type="button" class="btn traza-icon-btn traza-icon-btn-info" @onclick="() => AbrirDetalleAsync(item.Id)" title="Ver">
                                 <i class="fas fa-eye"></i>
                             </button>
-                            <button type="button" class="btn traza-icon-btn" @onclick="() => AbrirEdicionAsync(item.Id)" title="Editar">
+                            <button type="button" class="btn traza-icon-btn traza-icon-btn-primary" @onclick="() => AbrirEdicionAsync(item.Id)" title="Editar">
                                 <i class="fas fa-pencil-alt"></i>
                             </button>
-                            <button type="button" class="btn traza-icon-btn" @onclick="() => GenerarEnlaceActivaciónAsync(item.Id)" title="Generar enlace de acceso">
+                            <button type="button" class="btn traza-icon-btn traza-icon-btn-warning" @onclick="() => GenerarEnlaceActivaciónAsync(item.Id)" title="Generar enlace de acceso">
                                 <i class="fas fa-key"></i>
                             </button>
+                            <button type="button" class="btn traza-icon-btn traza-icon-btn-success" @onclick="() => DesbloquearAccesoAsync(item.Id)" title="Desbloquear acceso">
+                                <i class="fas fa-unlock"></i>
+                            </button>
                             <button type="button" class="btn traza-icon-btn traza-icon-btn-danger" @onclick="() => EliminarAsync(item.Id)" title="Eliminar">
-                                <i class="fas fa-trash-alt"></i>
+                                <i class="icon-trash"></i>
                             </button>
                         </Template>
                     </RadzenDataGridColumn>
@@ -397,6 +407,20 @@ else
 
         ultimoEnlaceActivación = await CrearEnlaceActivaciónAsync(identityUser);
         NotificationService.Notify(NotificationSeverity.Info, "Enlace generado", "El enlace de activación está listo para copiar.");
+    }
+
+    private async Task DesbloquearAccesoAsync(int usuarioId)
+    {
+        var identityUser = UserManager.Users.FirstOrDefault(x => x.UsuarioId == usuarioId);
+        if (identityUser is null)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Acceso no encontrado", "Este usuario no tiene una cuenta de acceso asociada.");
+            return;
+        }
+
+        await UserManager.SetLockoutEndDateAsync(identityUser, null);
+        await UserManager.ResetAccessFailedCountAsync(identityUser);
+        NotificationService.Notify(NotificationSeverity.Success, "Acceso desbloqueado", "El usuario ya puede volver a intentar iniciar sesion.");
     }
 
     private async Task<ApplicationUser?> CrearCuentaAccesoAsync(int usuarioId)

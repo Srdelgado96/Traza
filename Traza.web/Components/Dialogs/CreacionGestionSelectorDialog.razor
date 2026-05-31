@@ -5,6 +5,8 @@
 @inject IncidenciaDialogCoordinator IncidenciaDialogCoordinator
 @inject AccionMejoraDialogCoordinator AccionMejoraDialogCoordinator
 @inject ProyectoDialogCoordinator ProyectoDialogCoordinator
+@inject IAuthorizationService AuthorizationService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <div class="p-4 traza-creation-selector">
     <div class="text-center mb-4">
@@ -13,47 +15,83 @@
     </div>
 
     <div class="traza-creation-selector-grid">
-        <button type="button" class="traza-creation-selector-card" @onclick="AbrirIncidenciaAsync">
-            <span class="traza-creation-selector-icon bg-danger-subtle">
-                <i class="fas fa-exclamation-triangle"></i>
-            </span>
-            <span class="traza-creation-selector-title">Incidencia</span>
-            <span class="traza-creation-selector-text">Alta guiada de incidencias operativas.</span>
-        </button>
+        @if (puedeCrearIncidencias)
+        {
+            <button type="button" class="traza-creation-selector-card" @onclick="AbrirIncidenciaAsync">
+                <span class="traza-creation-selector-icon bg-danger-subtle">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </span>
+                <span class="traza-creation-selector-title">Incidencia</span>
+                <span class="traza-creation-selector-text">Alta guiada de incidencias operativas.</span>
+            </button>
+        }
 
-        <button type="button" class="traza-creation-selector-card" @onclick="AbrirAccionAsync">
-            <span class="traza-creation-selector-icon bg-success-subtle">
-                <i class="fas fa-tasks"></i>
-            </span>
-            <span class="traza-creation-selector-title">Acción de mejora</span>
-            <span class="traza-creation-selector-text">Registro de acciones con tareas y seguimiento.</span>
-        </button>
+        @if (puedeCrearAcciones)
+        {
+            <button type="button" class="traza-creation-selector-card" @onclick="AbrirAccionAsync">
+                <span class="traza-creation-selector-icon bg-success-subtle">
+                    <i class="fas fa-tasks"></i>
+                </span>
+                <span class="traza-creation-selector-title">Accion de mejora</span>
+                <span class="traza-creation-selector-text">Registro de acciones con tareas y seguimiento.</span>
+            </button>
+        }
 
-        <button type="button" class="traza-creation-selector-card" @onclick="AbrirProyectoAsync">
-            <span class="traza-creation-selector-icon bg-primary-subtle">
-                <i class="fas fa-project-diagram"></i>
-            </span>
-            <span class="traza-creation-selector-title">Proyecto</span>
-            <span class="traza-creation-selector-text">Creacion de proyectos con objetivos, fases y costes.</span>
-        </button>
+        @if (puedeCrearProyectos)
+        {
+            <button type="button" class="traza-creation-selector-card" @onclick="AbrirProyectoAsync">
+                <span class="traza-creation-selector-icon bg-primary-subtle">
+                    <i class="fas fa-project-diagram"></i>
+                </span>
+                <span class="traza-creation-selector-title">Proyecto</span>
+                <span class="traza-creation-selector-text">Creacion de proyectos con objetivos, fases y costes.</span>
+            </button>
+        }
     </div>
 </div>
 
 @code {
+    private bool puedeCrearIncidencias;
+    private bool puedeCrearAcciones;
+    private bool puedeCrearProyectos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
+        puedeCrearIncidencias = (await AuthorizationService.AuthorizeAsync(user, TrazaPolicies.CanCreateIncidents)).Succeeded;
+        puedeCrearAcciones = (await AuthorizationService.AuthorizeAsync(user, TrazaPolicies.CanCreateImprovementActions)).Succeeded;
+        puedeCrearProyectos = (await AuthorizationService.AuthorizeAsync(user, TrazaPolicies.CanCreateProjects)).Succeeded;
+    }
+
     private async Task AbrirIncidenciaAsync()
     {
+        if (!puedeCrearIncidencias)
+        {
+            return;
+        }
+
         DialogService.Close();
         await IncidenciaDialogCoordinator.AbrirNuevaAsync();
     }
 
     private async Task AbrirAccionAsync()
     {
+        if (!puedeCrearAcciones)
+        {
+            return;
+        }
+
         DialogService.Close();
         await AccionMejoraDialogCoordinator.AbrirNuevaAsync();
     }
 
     private async Task AbrirProyectoAsync()
     {
+        if (!puedeCrearProyectos)
+        {
+            return;
+        }
+
         DialogService.Close();
         await ProyectoDialogCoordinator.AbrirNuevoAsync();
     }

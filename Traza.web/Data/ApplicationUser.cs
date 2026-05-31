@@ -11,6 +11,7 @@ public class ApplicationUser : IdentityUser
 
     public int? UsuarioId { get; set; }
     public string DisplayName { get; set; } = string.Empty;
+    public string? ProfileImagePath { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTime? LastLoginAt { get; set; }
 }

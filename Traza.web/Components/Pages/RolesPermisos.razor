@@ -1,0 +1,137 @@
+@page "/roles-permisos"
+@attribute [Authorize(Policy = TrazaPolicies.CanManageUsers)]
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@using Traza.Web.Data
+@using Traza.Web.Data.Entidades
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject NotificationService NotificationService
+
+<PageTitle>Roles y permisos | Traza</PageTitle>
+
+@if (cargando)
+{
+    <div class="card card-round">
+        <div class="card-body py-5 text-center">
+            <RadzenProgressBarCircular Mode="ProgressBarMode.Indeterminate" />
+            <div class="mt-3 text-muted">Cargando permisos...</div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="page-header">
+        <div class="page-header-content">
+            <h4 class="page-title">Roles y permisos</h4>
+            <div class="text-muted">Define que puede hacer cada rol dentro de Traza.</div>
+        </div>
+    </div>
+
+    <div class="card card-round">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table align-middle traza-permissions-table">
+                    <thead>
+                        <tr>
+                            <th class="text-nowrap">Permiso</th>
+                            @foreach (var rol in roles)
+                            {
+                                <th class="text-center text-nowrap">@rol.Nombre</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var permiso in permisos)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">@permiso.Name</div>
+                                    <div class="small text-muted">@permiso.Description</div>
+                                </td>
+                                @foreach (var rol in roles)
+                                {
+                                    var activo = TienePermiso(rol, permiso.Key);
+                                    <td class="text-center">
+                                        <RadzenCheckBox TValue="bool"
+                                                        Value="@activo"
+                                                        Disabled="@EsPermisoProtegido(rol, permiso.Key)"
+                                                        Change="@(async (bool value) => await CambiarPermisoAsync(rol.Id, permiso.Key, value))" />
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool cargando = true;
+    private List<Rol> roles = [];
+    private IReadOnlyList<TrazaPermissionDefinition> permisos = TrazaPermissionCatalog.All;
+    private HashSet<string> permisosActivos = new(StringComparer.OrdinalIgnoreCase);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RecargarAsync();
+        cargando = false;
+    }
+
+    private async Task RecargarAsync()
+    {
+        await using var db = await DbContextFactory.CreateDbContextAsync();
+        roles = await db.Roles
+            .AsNoTracking()
+            .Where(x => x.Activo)
+            .OrderBy(x => x.Nombre)
+            .ToListAsync();
+
+        var permisosDb = await db.RolesPermisos
+            .AsNoTracking()
+            .Select(x => new { x.RolId, x.Permiso })
+            .ToListAsync();
+
+        permisosActivos = permisosDb
+            .Select(x => Key(x.RolId, x.Permiso))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private bool TienePermiso(Rol rol, string permiso)
+        => rol.Nombre == TrazaRoles.Administrador || permisosActivos.Contains(Key(rol.Id, permiso));
+
+    private async Task CambiarPermisoAsync(int rolId, string permiso, bool activo)
+    {
+        await using var db = await DbContextFactory.CreateDbContextAsync();
+        var existente = await db.RolesPermisos.FindAsync(rolId, permiso);
+
+        if (activo && existente is null)
+        {
+            db.RolesPermisos.Add(new RolPermiso { RolId = rolId, Permiso = permiso });
+        }
+        else if (!activo && existente is not null)
+        {
+            db.RolesPermisos.Remove(existente);
+        }
+
+        await db.SaveChangesAsync();
+
+        if (activo)
+        {
+            permisosActivos.Add(Key(rolId, permiso));
+        }
+        else
+        {
+            permisosActivos.Remove(Key(rolId, permiso));
+        }
+
+        NotificationService.Notify(NotificationSeverity.Success, "Permiso actualizado", "El cambio se aplicara al recargar la pagina afectada.");
+    }
+
+    private static bool EsPermisoProtegido(Rol rol, string permiso)
+        => rol.Nombre == TrazaRoles.Administrador;
+
+    private static string Key(int rolId, string permiso)
+        => $"{rolId}:{permiso}";
+}
